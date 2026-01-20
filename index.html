@@ -16,7 +16,7 @@
     }
 
     .card {
-      background: white;
+      background: #ffffff;
       padding: 25px;
       border-radius: 10px;
       width: 360px;
@@ -24,31 +24,32 @@
       text-align: center;
     }
 
-    h1 {
+    h2 {
       margin-bottom: 15px;
     }
 
     input {
       width: 100%;
       padding: 10px;
-      margin-top: 10px;
-      margin-bottom: 15px;
       font-size: 16px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
     button {
+      width: 100%;
+      padding: 12px;
       background: #25d366;
       color: white;
-      border: none;
-      padding: 12px;
-      width: 100%;
       font-size: 16px;
+      border: none;
       border-radius: 5px;
       cursor: pointer;
     }
 
     button:hover {
-      background: #1ebc5a;
+      background: #1ebe5d;
     }
   </style>
 </head>
@@ -56,8 +57,7 @@
 <body>
 
   <div class="card">
-    <h1>🔥 Cotizador Pellet</h1>
-    <p>Coyhaique</p>
+    <h2>🔥 Cotizador Pellet</h2>
 
     <input 
       type="number" 
@@ -66,86 +66,39 @@
       min="1"
     >
 
-    <button onclick="cotizar()">Cotizar por WhatsApp</button>
+    <button onclick="enviarWhatsApp()">Cotizar por WhatsApp</button>
   </div>
 
   <script>
-    function cotizar() {
+    function enviarWhatsApp() {
+      const cantidad = document.getElementById("cantidad").value;
 
-      // =============================
-      // CONFIGURACIÓN COMERCIAL
-      // =============================
-      const CIUDAD = "Coyhaique";
-      const PESO_SACO = 15;
-
-      const PRECIO_NORMAL = 4990;
-      const PRECIO_PROMO = 4240;
-      const PROMO_DESDE = 60;
-      const DESPACHO_GRATIS_DESDE = 12;
-
-      // 👉 TU NÚMERO REAL (SIN +, SIN ESPACIOS)
-      const WHATSAPP_EMPRESA = "56991422163";
-
-      // =============================
-      // LECTURA DE DATOS
-      // =============================
-      const cantidad = parseInt(document.getElementById("cantidad").value);
-
-      if (isNaN(cantidad) || cantidad <= 0) {
-        alert("Ingresa una cantidad válida de sacos");
+      if (!cantidad || cantidad <= 0) {
+        alert("Por favor ingresa una cantidad válida de sacos");
         return;
       }
 
-      // =============================
-      // LÓGICA DE PRECIOS
-      // =============================
-      let precio;
-      let tipoPrecio;
+      const precioSaco = 4240;
+      const total = cantidad * precioSaco;
 
-      if (cantidad >= PROMO_DESDE) {
-        precio = PRECIO_PROMO;
-        tipoPrecio = "precio promoción";
-      } else {
-        precio = PRECIO_NORMAL;
-        tipoPrecio = "precio normal";
-      }
+      const mensaje =
+`Hola 👋
 
-      const total = precio * cantidad;
+Acabo de cotizar pellet en su sitio web y estos son los datos que me entregó el cotizador:
 
-      // =============================
-      // DESPACHO
-      // =============================
-      let despachoTexto;
+🔥 Pellet certificado – saco de 15 kg
+📦 Cantidad: ${cantidad} sacos
+💰 Precio estimado por saco: $${precioSaco.toLocaleString("es-CL")}
+💵 Total estimado: $${total.toLocaleString("es-CL")}
 
-      if (cantidad >= DESPACHO_GRATIS_DESDE) {
-        despachoTexto = "🚚 Despacho GRATIS dentro de Coyhaique.";
-      } else {
-        despachoTexto = `🚚 Despacho con costo adicional dentro de Coyhaique (gratis desde ${DESPACHO_GRATIS_DESDE} sacos).`;
-      }
+🚚 Despacho dentro de Coyhaique
 
-      // =============================
-      // MENSAJE WHATSAPP
-      // =============================
-      const mensaje = `
-Hola 👋, quiero cotizar pellet en ${CIUDAD}.
+¿Me pueden confirmar disponibilidad y coordinar despacho, por favor?`;
 
-🔥 Pellet certificado – saco ${PESO_SACO} kg
-💰 Precio por saco (${tipoPrecio}): $${precio.toLocaleString("es-CL")}
-📦 Cantidad solicitada: ${cantidad} sacos
-🧾 Total estimado: $${total.toLocaleString("es-CL")}
+      const telefono = "56991422163"; // tu número real
+      const url = "https://wa.me/" + telefono + "?text=" + encodeURIComponent(mensaje);
 
-${despachoTexto}
-
-Quedo atento(a) para coordinar despacho.
-`;
-
-      // =============================
-      // LINK WHATSAPP
-      // =============================
-      const mensajeEncoded = encodeURIComponent(mensaje);
-      const link = `https://wa.me/${WHATSAPP_EMPRESA}?text=${mensajeEncoded}`;
-
-      window.open(link, "_blank");
+      window.open(url, "_blank");
     }
   </script>
 
