@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cotizador Pellet Coyhaique</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 10px;
+      width: 340px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background: #25D366;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1ebe5d;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <h2>🔥 Cotizador Pellet</h2>
+
+    <label>Cantidad de sacos (15 kg):</label>
+    <input type="number" id="cantidad" placeholder="Ej: 10">
+
+    <button onclick="cotizar()">Cotizar por WhatsApp</button>
+  </div>
+
+  <script>
+    function cotizar() {
+
+      const cantidad = document.getElementById("cantidad").value;
+
+      if (!cantidad || cantidad <= 0) {
+        alert("Ingresa una cantidad válida de sacos.");
+        return;
+      }
+
+      // ===== DATOS COMERCIALES =====
+      const PESO_SACO = 15;
+      const PRECIO_NORMAL = 4990;
+      const PRECIO_PROMO = 4240;
+      const PROMO_DESDE = 60;
+      const DESPACHO_GRATIS_DESDE = 12;
+      const CIUDAD = "Coyhaique";
+      const WHATSAPP_EMPRESA = "56991422163"; // TU NÚMERO REAL
+
+      let precioSaco = PRECIO_NORMAL;
+      let tipoPrecio = "precio normal";
+
+      if (cantidad >= PROMO_DESDE) {
+        precioSaco = PRECIO_PROMO;
+        tipoPrecio = "precio promoción";
+      }
+
+      const total = precioSaco * cantidad;
+
+      let despachoTexto =
+        `🚚 Despacho con costo adicional dentro de ${CIUDAD} (gratis desde ${DESPACHO_GRATIS_DESDE} sacos).`;
+
+      if (cantidad >= DESPACHO_GRATIS_DESDE) {
+        despachoTexto = `🚚 Despacho GRATIS dentro de ${CIUDAD}.`;
+      }
+
+      const mensaje =
+`Hola 👋, gracias por contactarnos.
+
+🔥 Pellet de ${PESO_SACO} kg
+💰 Precio por saco (${tipoPrecio}): $${precioSaco.toLocaleString("es-CL")}
+📦 Cantidad solicitada: ${cantidad} sacos
+🧾 Total estimado: $${total.toLocaleString("es-CL")}
+
+${despachoTexto}
+
+Si deseas avanzar, indícanos tu dirección en ${CIUDAD} y coordinamos el despacho 😊`;
+
+      const mensajeEncoded = encodeURIComponent(mensaje);
+
+      const url = `https://wa.me/${WHATSAPP_EMPRESA}?text=${mensajeEncoded}`;
+
+      window.open(url, "_blank");
+    }
+  </script>
+
+</body>
+</html>
