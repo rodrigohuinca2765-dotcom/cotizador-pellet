@@ -74,58 +74,69 @@
     <p>Cotización rápida para Coyhaique</p>
 
     <label for="cantidad"><strong>Cantidad de sacos (15 kg)</strong></label>
-    <input id="cantidad" type="number" placeholder="Ej: 10, 12, 60">
+    <input id="cantidad" type="number" placeholder="Ej: 5, 12, 60">
 
-    <button onclick="cotizarWhatsApp()">Cotizar por WhatsApp</button>
+    <button onclick="cotizar()">Cotizar por WhatsApp</button>
 
     <div class="nota">
+      🏬 Retiro en sucursal para compras menores a 12 sacos<br>
       🚚 Despacho GRATIS desde 12 sacos dentro de Coyhaique
     </div>
   </div>
 
   <script>
-    function cotizarWhatsApp() {
-      const cantidad = document.getElementById("cantidad").value;
+    function cotizar() {
+      const cantidad = parseInt(document.getElementById("cantidad").value);
 
-      if (!cantidad || cantidad <= 0) {
-        alert("Ingresa una cantidad válida");
+      if (isNaN(cantidad) || cantidad <= 0) {
+        alert("Ingresa una cantidad válida de sacos");
         return;
       }
 
       // CONFIGURACIÓN DE NEGOCIO
+      const CIUDAD = "Coyhaique";
+      const PESO_SACO = 15;
+
       const PRECIO_NORMAL = 4990;
       const PRECIO_PROMO = 4240;
       const PROMO_DESDE = 60;
       const DESPACHO_GRATIS_DESDE = 12;
-      const TELEFONO_EMPRESA = "56991422163"; // ECOMAS
 
-      let precio = PRECIO_NORMAL;
+      const TELEFONO_EMPRESA = "56991422163"; // WhatsApp Ecomas
+
+      // Determinar precio
+      let precioSaco = PRECIO_NORMAL;
       let tipoPrecio = "precio normal";
 
       if (cantidad >= PROMO_DESDE) {
-        precio = PRECIO_PROMO;
+        precioSaco = PRECIO_PROMO;
         tipoPrecio = "precio promoción";
       }
 
-      const total = precio * cantidad;
+      const total = precioSaco * cantidad;
 
-      let despachoTexto = `🚚 Despacho con costo adicional dentro de Coyhaique (gratis desde ${DESPACHO_GRATIS_DESDE} sacos).`;
+      // Lógica de despacho (CORRECTA)
+      let despachoTexto = "";
+
       if (cantidad >= DESPACHO_GRATIS_DESDE) {
         despachoTexto = "🚚 Despacho GRATIS dentro de Coyhaique.";
+      } else {
+        despachoTexto = "🏬 Retiro en sucursal Coyhaique.";
       }
 
+      // Mensaje final
       const mensaje = `
-Hola 👋, quiero cotizar pellet en Coyhaique.
+Hola 👋, quiero cotizar pellet en ${CIUDAD}.
 
-🔥 Pellet certificado – saco 15 kg
-💰 Precio por saco (${tipoPrecio}): $${precio.toLocaleString("es-CL")}
+🔥 Pellet certificado – saco ${PESO_SACO} kg
+💰 Precio por saco (${tipoPrecio}): $${precioSaco.toLocaleString("es-CL")}
 📦 Cantidad solicitada: ${cantidad} sacos
 🧾 Total estimado: $${total.toLocaleString("es-CL")}
 
 ${despachoTexto}
 
-Quedo atento para coordinar despacho.
-      `;
+Quedo atento para coordinar.
+      `.trim();
 
       const url = "https://wa.me/" + TELEFONO_EMPRESA + "?text=" + encodeURIComponent(mensaje);
       window.open(url, "_blank");
