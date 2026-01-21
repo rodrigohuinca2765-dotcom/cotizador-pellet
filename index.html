@@ -2,126 +2,93 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>🔥 Cotizador Pellet con IA</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <title>Cotizador de Pellet</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 5px;
-    }
-    button {
-      cursor: pointer;
+      background: #f5f5f5;
+      padding: 30px;
     }
     .box {
-      margin-top: 20px;
-      padding: 15px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
+      max-width: 500px;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    .precio {
+    h1 { margin-top: 0; }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    button {
+      background: #25D366;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #1ebe5d;
+    }
+    .result {
+      margin-top: 15px;
       font-weight: bold;
-      margin-bottom: 10px;
-    }
-    pre {
-      white-space: pre-wrap;
-      font-family: Arial, sans-serif;
     }
   </style>
 </head>
-
 <body>
 
-  <h2>🔥 Cotizador Pellet con IA</h2>
+<div class="box">
+  <h1>🔥 Cotizador de Pellet</h1>
 
-  <label>Cantidad de sacos:</label><br />
-  <input type="number" id="cantidad" min="1" placeholder="Ej: 20" />
-  <br />
+  <label>Cantidad de sacos (15 kg c/u):</label>
+  <input type="number" id="cantidad" placeholder="Ej: 60" />
+
   <button onclick="cotizar()">Cotizar</button>
 
-  <div id="resultado" class="box" style="display:none;">
-    <div class="precio" id="precio"></div>
-    <pre id="mensajeIA">Consultando IA...</pre>
-    <br />
-    <button onclick="enviarWhatsApp()">📲 Enviar a WhatsApp</button>
-  </div>
+  <div class="result" id="resultado"></div>
+
+  <button id="whatsappBtn" style="display:none;" onclick="enviarWhatsApp()">
+    📲 Enviar cotización por WhatsApp
+  </button>
+</div>
 
 <script>
-/* ===============================
-   CONFIGURACIÓN
-================================= */
-const API_IA = "http://127.0.0.1:8000/ia"; // tu FastAPI local
-const WHATSAPP = "56991422163"; // 👈 TU WhatsApp Business
+  let mensaje = "";
 
-let mensajeFinal = "";
+  function cotizar() {
+    const cantidad = parseInt(document.getElementById("cantidad").value);
+    if (!cantidad || cantidad <= 0) {
+      alert("Ingresa una cantidad válida");
+      return;
+    }
 
-/* ===============================
-   FUNCIÓN COTIZAR
-================================= */
-async function cotizar() {
-  const cantidad = parseInt(document.getElementById("cantidad").value);
+    let precioSaco = cantidad >= 60 ? 4240 : 4990;
+    let total = cantidad * precioSaco;
 
-  if (!cantidad || cantidad <= 0) {
-    alert("Ingresa una cantidad válida");
-    return;
+    mensaje =
+`Hola 👋, quiero cotizar pellet en Coyhaique.
+
+🔥 Pellet certificado – saco 15 kg
+💰 Precio por saco: $${precioSaco.toLocaleString()}
+📦 Cantidad solicitada: ${cantidad} sacos
+🧾 Total estimado: $${total.toLocaleString()}
+
+📍 Retiro en sucursal Coyhaique
+📌 Dirección: Lautaro #257`;
+
+    document.getElementById("resultado").innerText = mensaje;
+    document.getElementById("whatsappBtn").style.display = "block";
   }
 
-  // Precios
-  let precioUnitario = cantidad >= 60 ? 4240 : 4990;
-  let total = cantidad * precioUnitario;
-
-  document.getElementById("precio").innerText =
-    `💰 Precio por saco: $${precioUnitario.toLocaleString("es-CL")} | Total: $${total.toLocaleString("es-CL")}`;
-
-  document.getElementById("resultado").style.display = "block";
-  document.getElementById("mensajeIA").innerText = "Consultando IA...";
-
-  try {
-    const resp = await fetch(API_IA, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cantidad })
-    });
-
-    const data = await resp.json();
-    mensajeFinal =
-`🔥 Cotización Pellet – Coyhaique
-
-🧾 Cantidad: ${cantidad} sacos (15 kg)
-💰 Precio por saco: $${precioUnitario.toLocaleString("es-CL")}
-📦 Total: $${total.toLocaleString("es-CL")}
-
-${data.respuesta}`;
-
-    document.getElementById("mensajeIA").innerText = mensajeFinal;
-
-  } catch (error) {
-    document.getElementById("mensajeIA").innerText =
-      "❌ Error al conectar con la IA. Verifica que el servidor esté activo.";
-    mensajeFinal = "";
+  function enviarWhatsApp() {
+    const telefono = "56991422163";
+    const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+    window.open(url, "_blank");
   }
-}
-
-/* ===============================
-   ENVIAR A WHATSAPP
-================================= */
-function enviarWhatsApp() {
-  if (!mensajeFinal) {
-    alert("Primero debes cotizar");
-    return;
-  }
-
-  const textoCodificado = encodeURIComponent(mensajeFinal);
-  const url = `https://wa.me/${WHATSAPP}?text=${textoCodificado}`;
-  window.open(url, "_blank");
-}
 </script>
 
 </body>
