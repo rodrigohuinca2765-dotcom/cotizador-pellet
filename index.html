@@ -4,14 +4,31 @@
   <meta charset="UTF-8" />
   <title>Cotizador Pellet + IA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input, button { padding: 10px; font-size: 16px; }
-    .box { margin-top: 15px; padding: 15px; border: 1px solid #ddd; }
-    .precio { font-weight: bold; margin-bottom: 10px; }
-    pre { white-space: pre-wrap; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+    }
+    .box {
+      margin-top: 15px;
+      padding: 15px;
+      border: 1px solid #ddd;
+    }
+    .precio {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    pre {
+      white-space: pre-wrap;
+    }
   </style>
 </head>
+
 <body>
 
   <h2>🔥 Cotizador Pellet con IA</h2>
@@ -22,58 +39,60 @@
 
   <div id="resultado" class="box" style="display:none;">
     <div class="precio" id="precio"></div>
-    <pre id="mensajeIA"></pre>
+    <pre id="mensajeIA">Consultando IA...</pre>
     <br />
-    <button onclick="enviarWhatsApp()">📲 Enviar a WhatsApp</button>
+    <button onclick="enviarWhatsApp()">📱 Enviar a WhatsApp</button>
   </div>
 
   <script>
-    const PRECIO_NORMAL = 4990;
-    const PRECIO_PROMO  = 4240;
-    const API_IA = "http://127.0.0.1:8000/ia";
+    const API_IA = "http://127.0.0.1:8000/ia"; // API IA (local o futura)
 
-    let ultimoMensaje = "";
-    let ultimaCantidad = 0;
-    let ultimoTotal = 0;
+    let mensajeFinal = "";
 
     async function cotizar() {
-      const cantidad = Number(document.getElementById("cantidad").value);
+      const cantidad = parseInt(document.getElementById("cantidad").value);
       if (!cantidad || cantidad <= 0) {
         alert("Ingresa una cantidad válida");
         return;
       }
 
-      ultimaCantidad = cantidad;
+      let precioSaco = cantidad >= 60 ? 4240 : 4990;
+      let total = cantidad * precioSaco;
 
-      const precioUnitario = cantidad >= 60 ? PRECIO_PROMO : PRECIO_NORMAL;
-      ultimoTotal = precioUnitario * cantidad;
-
-      document.getElementById("precio").innerText =
-        `💰 Precio por saco: $${precioUnitario.toLocaleString()} | Total: $${ultimoTotal.toLocaleString()}`;
-
-      document.getElementById("mensajeIA").innerText = "Consultando IA...";
       document.getElementById("resultado").style.display = "block";
+      document.getElementById("precio").innerText =
+        `💰 Precio por saco: $${precioSaco.toLocaleString()} | Total: $${total.toLocaleString()}`;
 
-      const resp = await fetch(API_IA, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cantidad })
-      });
+      // Mensaje base
+      mensajeFinal =
+        `Hola 👋\n` +
+        `Acabo de cotizar pellet en Coyhaique.\n\n` +
+        `📦 Cantidad: ${cantidad} sacos\n` +
+        `💰 Precio por saco: $${precioSaco.toLocaleString()}\n` +
+        `🧾 Total estimado: $${total.toLocaleString()}\n\n`;
 
-      const data = await resp.json();
-      ultimoMensaje = data.respuesta;
-      document.getElementById("mensajeIA").innerText = ultimoMensaje;
+      try {
+        const resp = await fetch(API_IA, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cantidad })
+        });
+
+        const data = await resp.json();
+        mensajeFinal += data.respuesta;
+
+        document.getElementById("mensajeIA").innerText = data.respuesta;
+
+      } catch (error) {
+        document.getElementById("mensajeIA").innerText =
+          "⚠️ No se pudo contactar a la IA, pero la cotización está lista.";
+      }
     }
 
     function enviarWhatsApp() {
-      const telefono = "569XXXXXXXX"; // ← cambia por tu número
-      const texto =
-        `Hola 👋, acabo de cotizar pellet.\n\n` +
-        `📦 Cantidad: ${ultimaCantidad} sacos\n` +
-        `💰 Total estimado: $${ultimoTotal.toLocaleString()}\n\n` +
-        `${ultimoMensaje}`;
-
-      const url = `https://wa.me/${telefono}?text=${encodeURIComponent(texto)}`;
+      const numero = "56991422163"; // WhatsApp Business Ecomas
+      const mensajeCodificado = encodeURIComponent(mensajeFinal);
+      const url = `https://wa.me/${numero}?text=${mensajeCodificado}`;
       window.open(url, "_blank");
     }
   </script>
