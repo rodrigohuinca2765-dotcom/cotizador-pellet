@@ -1,133 +1,103 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cotizador Pellet Coyhaique</title>
+    <meta charset="UTF-8">
+    <title>Crear IA desde Cero 2 – Cotización Pellet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body{
-      font-family: Arial, sans-serif;
-      background:#f4f6f8;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      height:100vh;
-      margin:0;
-    }
-    .card{
-      background:#fff;
-      padding:25px;
-      border-radius:10px;
-      width:360px;
-      box-shadow:0 4px 10px rgba(0,0,0,.15);
-      text-align:center;
-    }
-    h2{ margin:0 0 10px 0; }
-    label{ display:block; text-align:left; margin-top:10px; }
-    input{
-      width:100%;
-      padding:10px;
-      margin:10px 0 15px 0;
-      font-size:16px;
-      box-sizing:border-box;
-    }
-    button{
-      width:100%;
-      padding:12px;
-      font-size:16px;
-      background:#25D366;
-      border:none;
-      color:#fff;
-      border-radius:6px;
-      cursor:pointer;
-    }
-    button:hover{ background:#1ebc5a; }
-    .hint{
-      font-size:12px;
-      color:#666;
-      margin-top:10px;
-      text-align:left;
-      line-height:1.3;
-    }
-  </style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .card {
+            background: #ffffff;
+            max-width: 420px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1ebe5d;
+        }
+        .info {
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
 </head>
 
 <body>
-  <div class="card">
-    <h2>🔥 Cotizador Pellet</h2>
 
-    <label for="cantidad">Cantidad de sacos (15 kg):</label>
-    <input id="cantidad" type="number" min="1" placeholder="Ej: 10" />
+<div class="card">
+    <h2>🔥 Cotización Pellet</h2>
 
-    <button onclick="cotizar()">Cotizar por WhatsApp</button>
+    <input type="number" id="cantidad" placeholder="Cantidad de sacos" min="1">
 
-    <div class="hint">
-      • Precio promo desde 60 sacos.<br/>
-      • Retiro en sucursal para 1 a 11 sacos.<br/>
-      • Despacho gratis desde 12 sacos (Coyhaique).
+    <button onclick="abrirConversacion()">Continuar por WhatsApp</button>
+
+    <div class="info">
+        📍 Retiro en sucursal Coyhaique<br>
+        <strong>Lautaro #257</strong>
     </div>
-  </div>
+</div>
 
-  <script>
-    function cotizar() {
-      // === CONFIGURACIÓN ===
-      const TELEFONO_EMPRESA = "56991422163"; // tu número empresa (sin +)
-      const PRECIO_NORMAL = 4990;
-      const PRECIO_PROMO = 4240;
+<script>
+    // =============================
+    // CONFIGURACIÓN
+    // =============================
+    const SUCURSAL = "Coyhaique";
+    const WHATSAPP_NUMERO = "569XXXXXXXX"; // tu número real
 
-      const PROMO_DESDE = 60;        // promo desde 60 sacos
-      const DESPACHO_GRATIS_DESDE = 12; // despacho gratis desde 12 sacos
-      const DIRECCION_SUCURSAL = "Lautaro #257";
+    const DESPACHO_GRATIS_DESDE = 12;
 
-      // === ENTRADA ===
-      const cantidad = parseInt(document.getElementById("cantidad").value, 10);
+    // =============================
+    // FUNCIÓN PRINCIPAL
+    // =============================
+    function abrirConversacion() {
+        const cantidad = parseInt(document.getElementById("cantidad").value);
 
-      if (!cantidad || cantidad <= 0) {
-        alert("Ingresa una cantidad válida de sacos");
-        return;
-      }
+        if (!cantidad || cantidad <= 0) {
+            alert("Ingresa una cantidad válida");
+            return;
+        }
 
-      // === PRECIO SEGÚN CANTIDAD ===
-      let precioSaco = PRECIO_NORMAL;
-      let tipoPrecio = "precio normal";
+        let tipoEntrega = cantidad >= DESPACHO_GRATIS_DESDE
+            ? "posible despacho gratis"
+            : "retiro en sucursal";
 
-      if (cantidad >= PROMO_DESDE) {
-        precioSaco = PRECIO_PROMO;
-        tipoPrecio = "precio promoción";
-      }
+        const mensaje =
+`Hola 👋
+Acabo de cotizar ${cantidad} sacos de pellet en ${SUCURSAL}.
 
-      const total = cantidad * precioSaco;
+Quedo atento para continuar la cotización.`;
 
-      // === DESPACHO / RETIRO ===
-      let despachoTexto = "";
-      if (cantidad >= DESPACHO_GRATIS_DESDE) {
-        despachoTexto = "🚚 Despacho GRATIS dentro de Coyhaique.";
-      } else {
-        despachoTexto =
-          "📍 Retiro en sucursal Coyhaique\n" +
-          "📍 Dirección: " + DIRECCION_SUCURSAL;
-      }
-
-      // === MENSAJE WHATSAPP ===
-      const mensaje = `
-Hola 👋, quiero cotizar pellet en Coyhaique.
-
-🔥 Pellet certificado – saco 15 kg
-💰 Precio por saco (${tipoPrecio}): $${precioSaco.toLocaleString("es-CL")}
-📦 Cantidad solicitada: ${cantidad} sacos
-🧾 Total estimado: $${total.toLocaleString("es-CL")}
-
-${despachoTexto}
-
-Quedo atento(a).
-      `.trim();
-
-      const url = "https://wa.me/" + TELEFONO_EMPRESA + "?text=" + encodeURIComponent(mensaje);
-
-      // Abre WhatsApp Web / app
-      window.open(url, "_blank");
+        const url = "https://wa.me/" + WHATSAPP_NUMERO + "?text=" + encodeURIComponent(mensaje);
+        window.open(url, "_blank");
     }
-  </script>
+</script>
+
 </body>
 </html>
