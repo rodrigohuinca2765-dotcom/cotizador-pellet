@@ -1,103 +1,63 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Crear IA desde Cero 2 – Cotización Pellet</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-        }
-        .card {
-            background: #ffffff;
-            max-width: 420px;
-            margin: auto;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        h2 {
-            text-align: center;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            background: #25D366;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #1ebe5d;
-        }
-        .info {
-            margin-top: 15px;
-            font-size: 14px;
-            text-align: center;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Cotizador Pellet + IA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button { padding: 10px; font-size: 16px; }
+    .box { margin-top: 15px; padding: 15px; border: 1px solid #ddd; }
+    .precio { font-weight: bold; }
+    pre { white-space: pre-wrap; }
+  </style>
 </head>
-
 <body>
 
-<div class="card">
-    <h2>🔥 Cotización Pellet</h2>
+  <h2>🔥 Cotizador Pellet con IA</h2>
 
-    <input type="number" id="cantidad" placeholder="Cantidad de sacos" min="1">
+  <label>Cantidad de sacos:</label><br />
+  <input type="number" id="cantidad" min="1" placeholder="Ej: 20" />
+  <button onclick="cotizar()">Cotizar</button>
 
-    <button onclick="abrirConversacion()">Continuar por WhatsApp</button>
+  <div id="resultado" class="box" style="display:none;">
+    <div class="precio" id="precio"></div>
+    <pre id="mensajeIA"></pre>
+  </div>
 
-    <div class="info">
-        📍 Retiro en sucursal Coyhaique<br>
-        <strong>Lautaro #257</strong>
-    </div>
-</div>
+  <script>
+    const PRECIO_NORMAL = 4990;
+    const PRECIO_PROMO  = 4240;
+    const API_IA = "http://127.0.0.1:8000/ia";
 
-<script>
-    // =============================
-    // CONFIGURACIÓN
-    // =============================
-    const SUCURSAL = "Coyhaique";
-    const WHATSAPP_NUMERO = "569XXXXXXXX"; // tu número real
+    async function cotizar() {
+      const cantidad = Number(document.getElementById("cantidad").value);
+      if (!cantidad || cantidad <= 0) {
+        alert("Ingresa una cantidad válida");
+        return;
+      }
 
-    const DESPACHO_GRATIS_DESDE = 12;
+      // 1) Calcular precio
+      const precioUnitario = cantidad >= 60 ? PRECIO_PROMO : PRECIO_NORMAL;
+      const total = precioUnitario * cantidad;
 
-    // =============================
-    // FUNCIÓN PRINCIPAL
-    // =============================
-    function abrirConversacion() {
-        const cantidad = parseInt(document.getElementById("cantidad").value);
+      document.getElementById("precio").innerText =
+        `💰 Precio por saco: $${precioUnitario.toLocaleString()} | Total: $${total.toLocaleString()}`;
 
-        if (!cantidad || cantidad <= 0) {
-            alert("Ingresa una cantidad válida");
-            return;
-        }
+      // 2) Consultar IA
+      document.getElementById("mensajeIA").innerText = "Consultando IA...";
+      document.getElementById("resultado").style.display = "block";
 
-        let tipoEntrega = cantidad >= DESPACHO_GRATIS_DESDE
-            ? "posible despacho gratis"
-            : "retiro en sucursal";
+      const resp = await fetch(API_IA, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cantidad })
+      });
 
-        const mensaje =
-`Hola 👋
-Acabo de cotizar ${cantidad} sacos de pellet en ${SUCURSAL}.
-
-Quedo atento para continuar la cotización.`;
-
-        const url = "https://wa.me/" + WHATSAPP_NUMERO + "?text=" + encodeURIComponent(mensaje);
-        window.open(url, "_blank");
+      const data = await resp.json();
+      document.getElementById("mensajeIA").innerText = data.respuesta;
     }
-</script>
+  </script>
 
 </body>
 </html>
