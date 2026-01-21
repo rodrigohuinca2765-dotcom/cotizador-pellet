@@ -2,22 +2,29 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Cotizador Pellet + IA</title>
+  <title>🔥 Cotizador Pellet con IA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
+      max-width: 600px;
+      margin: auto;
     }
     input, button {
       padding: 10px;
       font-size: 16px;
+      margin-top: 5px;
+    }
+    button {
+      cursor: pointer;
     }
     .box {
-      margin-top: 15px;
+      margin-top: 20px;
       padding: 15px;
       border: 1px solid #ddd;
+      border-radius: 6px;
     }
     .precio {
       font-weight: bold;
@@ -25,6 +32,7 @@
     }
     pre {
       white-space: pre-wrap;
+      font-family: Arial, sans-serif;
     }
   </style>
 </head>
@@ -35,67 +43,86 @@
 
   <label>Cantidad de sacos:</label><br />
   <input type="number" id="cantidad" min="1" placeholder="Ej: 20" />
+  <br />
   <button onclick="cotizar()">Cotizar</button>
 
   <div id="resultado" class="box" style="display:none;">
     <div class="precio" id="precio"></div>
     <pre id="mensajeIA">Consultando IA...</pre>
     <br />
-    <button onclick="enviarWhatsApp()">📱 Enviar a WhatsApp</button>
+    <button onclick="enviarWhatsApp()">📲 Enviar a WhatsApp</button>
   </div>
 
-  <script>
-    const API_IA = "http://127.0.0.1:8000/ia"; // API IA (local o futura)
+<script>
+/* ===============================
+   CONFIGURACIÓN
+================================= */
+const API_IA = "http://127.0.0.1:8000/ia"; // tu FastAPI local
+const WHATSAPP = "56991422163"; // 👈 TU WhatsApp Business
 
-    let mensajeFinal = "";
+let mensajeFinal = "";
 
-    async function cotizar() {
-      const cantidad = parseInt(document.getElementById("cantidad").value);
-      if (!cantidad || cantidad <= 0) {
-        alert("Ingresa una cantidad válida");
-        return;
-      }
+/* ===============================
+   FUNCIÓN COTIZAR
+================================= */
+async function cotizar() {
+  const cantidad = parseInt(document.getElementById("cantidad").value);
 
-      let precioSaco = cantidad >= 60 ? 4240 : 4990;
-      let total = cantidad * precioSaco;
+  if (!cantidad || cantidad <= 0) {
+    alert("Ingresa una cantidad válida");
+    return;
+  }
 
-      document.getElementById("resultado").style.display = "block";
-      document.getElementById("precio").innerText =
-        `💰 Precio por saco: $${precioSaco.toLocaleString()} | Total: $${total.toLocaleString()}`;
+  // Precios
+  let precioUnitario = cantidad >= 60 ? 4240 : 4990;
+  let total = cantidad * precioUnitario;
 
-      // Mensaje base
-      mensajeFinal =
-        `Hola 👋\n` +
-        `Acabo de cotizar pellet en Coyhaique.\n\n` +
-        `📦 Cantidad: ${cantidad} sacos\n` +
-        `💰 Precio por saco: $${precioSaco.toLocaleString()}\n` +
-        `🧾 Total estimado: $${total.toLocaleString()}\n\n`;
+  document.getElementById("precio").innerText =
+    `💰 Precio por saco: $${precioUnitario.toLocaleString("es-CL")} | Total: $${total.toLocaleString("es-CL")}`;
 
-      try {
-        const resp = await fetch(API_IA, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cantidad })
-        });
+  document.getElementById("resultado").style.display = "block";
+  document.getElementById("mensajeIA").innerText = "Consultando IA...";
 
-        const data = await resp.json();
-        mensajeFinal += data.respuesta;
+  try {
+    const resp = await fetch(API_IA, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cantidad })
+    });
 
-        document.getElementById("mensajeIA").innerText = data.respuesta;
+    const data = await resp.json();
+    mensajeFinal =
+`🔥 Cotización Pellet – Coyhaique
 
-      } catch (error) {
-        document.getElementById("mensajeIA").innerText =
-          "⚠️ No se pudo contactar a la IA, pero la cotización está lista.";
-      }
-    }
+🧾 Cantidad: ${cantidad} sacos (15 kg)
+💰 Precio por saco: $${precioUnitario.toLocaleString("es-CL")}
+📦 Total: $${total.toLocaleString("es-CL")}
 
-    function enviarWhatsApp() {
-      const numero = "56991422163"; // WhatsApp Business Ecomas
-      const mensajeCodificado = encodeURIComponent(mensajeFinal);
-      const url = `https://wa.me/${numero}?text=${mensajeCodificado}`;
-      window.open(url, "_blank");
-    }
-  </script>
+${data.respuesta}`;
+
+    document.getElementById("mensajeIA").innerText = mensajeFinal;
+
+  } catch (error) {
+    document.getElementById("mensajeIA").innerText =
+      "❌ Error al conectar con la IA. Verifica que el servidor esté activo.";
+    mensajeFinal = "";
+  }
+}
+
+/* ===============================
+   ENVIAR A WHATSAPP
+================================= */
+function enviarWhatsApp() {
+  if (!mensajeFinal) {
+    alert("Primero debes cotizar");
+    return;
+  }
+
+  const textoCodificado = encodeURIComponent(mensajeFinal);
+  const url = `https://wa.me/${WHATSAPP}?text=${textoCodificado}`;
+  window.open(url, "_blank");
+}
+</script>
 
 </body>
 </html>
