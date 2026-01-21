@@ -1,22 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Cotizador de Pellet</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 30px;
+      background: #f4f4f4;
+      padding: 40px;
     }
-    .box {
-      max-width: 500px;
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
+    .card {
+      background: #fff;
+      padding: 20px;
+      max-width: 420px;
+      margin: auto;
+      border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    h1 { margin-top: 0; }
+    h2 {
+      text-align: center;
+    }
     input, button {
       width: 100%;
       padding: 10px;
@@ -24,72 +27,60 @@
       font-size: 16px;
     }
     button {
-      background: #25D366;
+      background: #2ecc71;
       border: none;
       color: white;
       cursor: pointer;
-      border-radius: 5px;
     }
-    button:hover {
-      background: #1ebe5d;
-    }
-    .result {
-      margin-top: 15px;
-      font-weight: bold;
+    .resultado {
+      margin-top: 20px;
+      white-space: pre-line;
+      font-size: 15px;
     }
   </style>
 </head>
 <body>
 
-<div class="box">
-  <h1>🔥 Cotizador de Pellet</h1>
+  <div class="card">
+    <h2>🔥 Cotizador de Pellet</h2>
 
-  <label>Cantidad de sacos (15 kg c/u):</label>
-  <input type="number" id="cantidad" placeholder="Ej: 60" />
+    <input type="number" id="cantidad" placeholder="Cantidad de sacos (ej: 60)" />
 
-  <button onclick="cotizar()">Cotizar</button>
+    <button onclick="cotizar()">Cotizar</button>
 
-  <div class="result" id="resultado"></div>
+    <div class="resultado" id="resultado"></div>
+  </div>
 
-  <button id="whatsappBtn" style="display:none;" onclick="enviarWhatsApp()">
-    📲 Enviar cotización por WhatsApp
-  </button>
-</div>
+  <script>
+    async function cotizar() {
+      const cantidad = document.getElementById("cantidad").value;
+      const resultado = document.getElementById("resultado");
 
-<script>
-  let mensaje = "";
+      if (!cantidad || cantidad <= 0) {
+        resultado.innerText = "⚠️ Ingresa una cantidad válida";
+        return;
+      }
 
-  function cotizar() {
-    const cantidad = parseInt(document.getElementById("cantidad").value);
-    if (!cantidad || cantidad <= 0) {
-      alert("Ingresa una cantidad válida");
-      return;
+      resultado.innerText = "⏳ Cotizando...";
+
+      try {
+        const response = await fetch("https://cotizador-pellet.onrender.com/cotizar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ cantidad: Number(cantidad) })
+        });
+
+        const data = await response.json();
+
+        resultado.innerText = data.mensaje;
+
+      } catch (error) {
+        resultado.innerText = "❌ Error al conectar con el servidor";
+      }
     }
-
-    let precioSaco = cantidad >= 60 ? 4240 : 4990;
-    let total = cantidad * precioSaco;
-
-    mensaje =
-`Hola 👋, quiero cotizar pellet en Coyhaique.
-
-🔥 Pellet certificado – saco 15 kg
-💰 Precio por saco: $${precioSaco.toLocaleString()}
-📦 Cantidad solicitada: ${cantidad} sacos
-🧾 Total estimado: $${total.toLocaleString()}
-
-📍 Retiro en sucursal Coyhaique
-📌 Dirección: Lautaro #257`;
-
-    document.getElementById("resultado").innerText = mensaje;
-    document.getElementById("whatsappBtn").style.display = "block";
-  }
-
-  function enviarWhatsApp() {
-    const telefono = "56991422163";
-    const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
-  }
-</script>
+  </script>
 
 </body>
 </html>
