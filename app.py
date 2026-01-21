@@ -4,45 +4,58 @@ app = Flask(__name__)
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Cotizador de Pellet activo 🚀"
+    return "Cotizador de Pellet activo 🔥"
 
 @app.route("/cotizar", methods=["POST"])
 def cotizar():
     data = request.get_json()
     cantidad = int(data.get("cantidad", 0))
 
-    # Precio por saco
+    # Precios
+    precio_normal = 4990
+    precio_promo = 4240
+
+    # Lógica de precio
     if cantidad >= 60:
-        precio = 4240
-        promo = "Precio promoción aplicado para compras desde 60 sacos."
+        precio = precio_promo
+        tipo_precio = "Precio PROMOCIÓN aplicado"
     else:
-        precio = 4990
-        promo = "Compras desde 60 sacos acceden a precio promoción."
+        precio = precio_normal
+        tipo_precio = "Precio normal"
 
     total = cantidad * precio
 
-    # Condición de despacho
+    # Lógica de despacho
     if cantidad >= 12:
-        entrega = "Despacho a domicilio sin costo dentro de la comuna de Coyhaique."
+        despacho = (
+            "🚚 Despacho a domicilio GRATIS dentro de Coyhaique.\n"
+            "Un ejecutivo coordinará día y horario de entrega."
+        )
     else:
-        entrega = "Retiro en sucursal Coyhaique, Lautaro #257."
+        despacho = (
+            "📍 Retiro en sucursal Coyhaique.\n"
+            "Dirección: Lautaro #257."
+        )
 
     mensaje = f"""
-Estimado/a 👋
+🔥 Cotización de Pellet – Coyhaique
 
-Detalle de su cotización de pellet:
+• Producto: Pellet certificado (saco 15 kg)
+• Cantidad solicitada: {cantidad} sacos
+• Precio por saco: ${precio:,}
+• Total estimado: ${total:,}
 
-📦 Cantidad: {cantidad} sacos (15 kg c/u)
-💰 Precio por saco: ${precio}
-🧾 Total estimado: ${total}
+{tipo_precio}
 
-🚚 {entrega}
-
-{promo}
+{despacho}
 """
 
     return jsonify({
-        "respuesta": mensaje.strip(),
+        "cantidad": cantidad,
         "precio_saco": precio,
-        "total": total
+        "total": total,
+        "mensaje": mensaje.strip()
     })
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
