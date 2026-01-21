@@ -8,7 +8,7 @@
     body { font-family: Arial, sans-serif; padding: 20px; }
     input, button { padding: 10px; font-size: 16px; }
     .box { margin-top: 15px; padding: 15px; border: 1px solid #ddd; }
-    .precio { font-weight: bold; }
+    .precio { font-weight: bold; margin-bottom: 10px; }
     pre { white-space: pre-wrap; }
   </style>
 </head>
@@ -23,12 +23,18 @@
   <div id="resultado" class="box" style="display:none;">
     <div class="precio" id="precio"></div>
     <pre id="mensajeIA"></pre>
+    <br />
+    <button onclick="enviarWhatsApp()">📲 Enviar a WhatsApp</button>
   </div>
 
   <script>
     const PRECIO_NORMAL = 4990;
     const PRECIO_PROMO  = 4240;
     const API_IA = "http://127.0.0.1:8000/ia";
+
+    let ultimoMensaje = "";
+    let ultimaCantidad = 0;
+    let ultimoTotal = 0;
 
     async function cotizar() {
       const cantidad = Number(document.getElementById("cantidad").value);
@@ -37,14 +43,14 @@
         return;
       }
 
-      // 1) Calcular precio
+      ultimaCantidad = cantidad;
+
       const precioUnitario = cantidad >= 60 ? PRECIO_PROMO : PRECIO_NORMAL;
-      const total = precioUnitario * cantidad;
+      ultimoTotal = precioUnitario * cantidad;
 
       document.getElementById("precio").innerText =
-        `💰 Precio por saco: $${precioUnitario.toLocaleString()} | Total: $${total.toLocaleString()}`;
+        `💰 Precio por saco: $${precioUnitario.toLocaleString()} | Total: $${ultimoTotal.toLocaleString()}`;
 
-      // 2) Consultar IA
       document.getElementById("mensajeIA").innerText = "Consultando IA...";
       document.getElementById("resultado").style.display = "block";
 
@@ -55,7 +61,20 @@
       });
 
       const data = await resp.json();
-      document.getElementById("mensajeIA").innerText = data.respuesta;
+      ultimoMensaje = data.respuesta;
+      document.getElementById("mensajeIA").innerText = ultimoMensaje;
+    }
+
+    function enviarWhatsApp() {
+      const telefono = "569XXXXXXXX"; // ← cambia por tu número
+      const texto =
+        `Hola 👋, acabo de cotizar pellet.\n\n` +
+        `📦 Cantidad: ${ultimaCantidad} sacos\n` +
+        `💰 Total estimado: $${ultimoTotal.toLocaleString()}\n\n` +
+        `${ultimoMensaje}`;
+
+      const url = `https://wa.me/${telefono}?text=${encodeURIComponent(texto)}`;
+      window.open(url, "_blank");
     }
   </script>
 
