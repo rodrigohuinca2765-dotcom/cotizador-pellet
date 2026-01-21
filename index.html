@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Cotizador Pellet Coyhaique</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     body {
@@ -20,36 +21,48 @@
       padding: 25px;
       border-radius: 10px;
       width: 360px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       text-align: center;
     }
 
-    h2 {
-      margin-bottom: 15px;
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 14px;
+      color: #555;
     }
 
     input {
       width: 100%;
       padding: 10px;
+      margin-top: 15px;
       font-size: 16px;
-      margin-bottom: 15px;
-      border-radius: 5px;
+      border-radius: 6px;
       border: 1px solid #ccc;
     }
 
     button {
+      margin-top: 20px;
       width: 100%;
       padding: 12px;
-      background: #25d366;
-      color: white;
-      font-size: 16px;
+      background: #25D366;
+      color: #fff;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
+      font-size: 16px;
       cursor: pointer;
     }
 
     button:hover {
-      background: #1ebe5d;
+      background: #1ebc5c;
+    }
+
+    .nota {
+      margin-top: 15px;
+      font-size: 12px;
+      color: #777;
     }
   </style>
 </head>
@@ -57,47 +70,64 @@
 <body>
 
   <div class="card">
-    <h2>🔥 Cotizador Pellet</h2>
+    <h1>🔥 Cotizador Pellet</h1>
+    <p>Cotización rápida para Coyhaique</p>
 
-    <input 
-      type="number" 
-      id="cantidad" 
-      placeholder="Cantidad de sacos (15 kg)" 
-      min="1"
-    >
+    <label for="cantidad"><strong>Cantidad de sacos (15 kg)</strong></label>
+    <input id="cantidad" type="number" placeholder="Ej: 10, 12, 60">
 
-    <button onclick="enviarWhatsApp()">Cotizar por WhatsApp</button>
+    <button onclick="cotizarWhatsApp()">Cotizar por WhatsApp</button>
+
+    <div class="nota">
+      🚚 Despacho GRATIS desde 12 sacos dentro de Coyhaique
+    </div>
   </div>
 
   <script>
-    function enviarWhatsApp() {
+    function cotizarWhatsApp() {
       const cantidad = document.getElementById("cantidad").value;
 
       if (!cantidad || cantidad <= 0) {
-        alert("Por favor ingresa una cantidad válida de sacos");
+        alert("Ingresa una cantidad válida");
         return;
       }
 
-      const precioSaco = 4240;
-      const total = cantidad * precioSaco;
+      // CONFIGURACIÓN DE NEGOCIO
+      const PRECIO_NORMAL = 4990;
+      const PRECIO_PROMO = 4240;
+      const PROMO_DESDE = 60;
+      const DESPACHO_GRATIS_DESDE = 12;
+      const TELEFONO_EMPRESA = "56991422163"; // ECOMAS
 
-      const mensaje =
-`Hola 👋
+      let precio = PRECIO_NORMAL;
+      let tipoPrecio = "precio normal";
 
-Acabo de cotizar pellet en su sitio web y estos son los datos que me entregó el cotizador:
+      if (cantidad >= PROMO_DESDE) {
+        precio = PRECIO_PROMO;
+        tipoPrecio = "precio promoción";
+      }
 
-🔥 Pellet certificado – saco de 15 kg
-📦 Cantidad: ${cantidad} sacos
-💰 Precio estimado por saco: $${precioSaco.toLocaleString("es-CL")}
-💵 Total estimado: $${total.toLocaleString("es-CL")}
+      const total = precio * cantidad;
 
-🚚 Despacho dentro de Coyhaique
+      let despachoTexto = `🚚 Despacho con costo adicional dentro de Coyhaique (gratis desde ${DESPACHO_GRATIS_DESDE} sacos).`;
+      if (cantidad >= DESPACHO_GRATIS_DESDE) {
+        despachoTexto = "🚚 Despacho GRATIS dentro de Coyhaique.";
+      }
 
-¿Me pueden confirmar disponibilidad y coordinar despacho, por favor?`;
+      const mensaje = `
+Hola 👋, quiero cotizar pellet en Coyhaique.
 
-      const telefono = "56991422163"; // tu número real
-      const url = "https://wa.me/" + telefono + "?text=" + encodeURIComponent(mensaje);
+🔥 Pellet certificado – saco 15 kg
+💰 Precio por saco (${tipoPrecio}): $${precio.toLocaleString("es-CL")}
+📦 Cantidad solicitada: ${cantidad} sacos
+🧾 Total estimado: $${total.toLocaleString("es-CL")}
 
+${despachoTexto}
+
+Quedo atento para coordinar despacho.
+      `;
+
+      const url = "https://wa.me/" + TELEFONO_EMPRESA + "?text=" + encodeURIComponent(mensaje);
       window.open(url, "_blank");
     }
   </script>
