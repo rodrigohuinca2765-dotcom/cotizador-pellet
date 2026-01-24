@@ -1,57 +1,67 @@
-import os
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
+import re
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+app = FastAPI(
+    title="Cotizador Pellet Ecomas",
+    description="API de cotización inteligente para Pellet en Coyhaique",
+    version="1.0.0"
+)
 
-PRECIO_NORMAL = 4990
-PRECIO_PROMO = 4240
-MIN_PROMO = 60
+# 🔥 CORS (CLAVE PARA GITHUB PAGES)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # luego lo cerramos, hoy lo dejamos abierto
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app = FastAPI(title="Agente de Ventas Pellet Ecomas")
-
+# ---------- MODELO ----------
 class IARequest(BaseModel):
     mensaje: str
-    contexto: list | None = []
 
+# ---------- UTILIDAD ----------
+def extraer_cantidad(texto: str) -> int:
+    match = re.search(r"\d+", texto)
+    return int(match.group()) if match else 0
+
+# ---------- RUTA RAÍZ ----------
 @app.get("/")
 def home():
-    return {"status": "Agente de ventas Ecomas activo 🔥"}
+    return {"status": "Cotizador de Pellet activo 🔥"}
 
+# ---------- IA COTIZADOR ----------
 @app.post("/ia-cotizar")
-def ia_cotizar(data: IARequest):
+def cotizar(data: IARequest):
+    texto = data.mensaje.lower()
+    cantidad = extraer_cantidad(texto)
 
-    system_prompt = f"""
-Eres un AGENTE DE VENTAS de Ecomas Pellet Coyhaique.
+    if cantidad >= 60:
+        precio_saco = 4240
+        tipo_precio = "Precio PROMOCIÓN"
+    else:
+        precio_saco = 4990
+        tipo_precio = "Precio normal"
 
-Reglas:
-- Conversa con el cliente de forma natural.
-- Si NO sabes la cantidad, pregunta cuántos sacos necesita.
-- Si sabes la cantidad pero no la ciudad, pregunta la ciudad.
-- Cuando tengas cantidad y ciudad, entrega la cotización completa.
-- Aplica precio promoción si cantidad >= {MIN_PROMO}.
-- NO inventes datos.
-- NO uses emojis en exceso.
-- Responde siempre en español.
-"""
+    total = cantidad * precio_saco
 
-    messages = [{"role": "system", "content": system_prompt}]
-
-    if data.contexto:
-        messages.extend(data.contexto)
-
-    messages.append({"role": "user", "content": data.mensaje})
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=messages,
-        temperature=0.3
+    mensaje = (
+        f"Hola 👋, quiero cotizar pellet en Coyhaique.\n\n"
+        f"🔥 Pellet certificado – saco 15 kg\n"
+        f"📦 Cantidad solicitada: {cantidad} sacos\n"
+        f"💰 Precio por saco: ${precio_saco:,}\n"
+        f"🧾 Total estimado: ${total:,}\n\n"
+        f"📍 Retiro en sucursal Coyhaique\n"
+        f"📌 Dirección: Lautaro #257\n\n"
+        f"👉 {tipo_precio}"
     )
 
-    respuesta = response.choices[0].message.content
-
     return {
-        "mensaje": respuesta,
-        "nuevo_contexto": messages + [{"role": "assistant", "content": respuesta}]
+        "cantidad": cantidad,
+        "precio_saco": precio_saco,
+        "tipo_precio": tipo_precio,
+        "total": total,
+        "mensaje": mensaje
     }
