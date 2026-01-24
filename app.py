@@ -34,18 +34,17 @@ def root():
 @app.post("/chat")
 def chat(req: ChatRequest):
     try:
-        system_prompt = """
-Eres un agente de ventas de ECOMAS en Coyhaique.
-Tu trabajo es:
-- Saludar cordialmente
-- Pedir datos si faltan (cantidad, ciudad)
-- Cotizar pellet saco 15 kg
-- Precio normal: $4.990
-- Precio promoción: $4.240 desde 60 sacos
-- Retiro en sucursal Coyhaique
-- Dirección: Lautaro #257
-Habla claro, amable y comercial.
-"""
+        system_prompt = (
+            "Eres un agente de ventas de ECOMAS en Coyhaique.\n"
+            "- Atiendes clientes de forma cordial\n"
+            "- Pides datos si faltan (cantidad, ciudad)\n"
+            "- Producto: Pellet certificado saco 15 kg\n"
+            "- Precio normal: $4.990\n"
+            "- Precio promoción: $4.240 desde 60 sacos\n"
+            "- Retiro en sucursal Coyhaique\n"
+            "- Dirección: Lautaro #257\n"
+            "- Respondes como vendedor profesional\n"
+        )
 
         response = client.chat.completions.create(
             model=MODEL,
@@ -64,3 +63,4 @@ Habla claro, amable y comercial.
         return {
             "error": str(e)
         }
+
