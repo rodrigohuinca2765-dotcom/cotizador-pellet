@@ -1,71 +1,74 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import re
+import openai
+import os
 
-app = FastAPI(
-    title="Cotizador Pellet Ecomas",
-    version="1.0"
+# =========================
+# CONFIG
+# =========================
+openai.api_key = os.getenv("OPENAI_API_KEY")
+MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+
+app = FastAPI()
+
+# =========================
+# CORS (OBLIGATORIO)
+# =========================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # GitHub Pages
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# ---------- MODELO ----------
+# =========================
+# MODELOS
+# =========================
 class ChatRequest(BaseModel):
-    mensaje: str
+    message: str
 
-# ---------- UTILIDAD ----------
-def extraer_cantidad(texto: str) -> int:
-    match = re.search(r"\d+", texto)
-    return int(match.group()) if match else 0
-
-# ---------- RUTA RAÍZ ----------
+# =========================
+# HEALTH CHECK
+# =========================
 @app.get("/")
-def home():
+def root():
     return {
         "status": "Cotizador de Pellet activo 🔥",
-        "endpoints": ["/chat", "/cotizar"]
+        "endpoints": ["/chat"]
     }
 
-# ---------- CHAT / AGENTE ----------
+# =========================
+# CHAT OPENAI
+# =========================
 @app.post("/chat")
-def chat(request: ChatRequest):
-    texto = request.mensaje.lower()
-    cantidad = extraer_cantidad(texto)
+def chat(req: ChatRequest):
+    try:
+        response = openai.ChatCompletion.create(
+            model=MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Eres un agente de ventas de Ecomas en Coyhaique. "
+                        "Vendes pellet certificado en sacos de 15 kg. "
+                        "Precio normal: $4.990 por saco. "
+                        "Si el cliente compra 60 sacos o más, precio promoción: $4.240 por saco. "
+                        "Retiro en sucursal Coyhaique, dirección Lautaro #257. "
+                        "Guía la conversación, pregunta cantidad y responde claro y amable."
+                    )
+                },
+                {"role": "user", "content": req.message}
+            ],
+            temperature=0.4
+        )
 
-    # Si no indica cantidad → agente pregunta
-    if cantidad == 0:
         return {
-            "mensaje": (
-                "Hola 👋 soy tu asesor Ecomas.\n\n"
-                "Para ayudarte con la cotización necesito saber:\n"
-                "👉 ¿Cuántos sacos de pellet necesitas?\n\n"
-                "Ejemplo: *Necesito 70 sacos*"
-            )
+            "reply": response.choices[0].message["content"]
         }
 
-    # Lógica de precios
-    if cantidad >= 60:
-        precio = 4240
-        tipo = "PROMOCIÓN"
-    else:
-        precio = 4990
-        tipo = "normal"
-
-    total = cantidad * precio
-
-    mensaje = (
-        f"Perfecto 👍 aquí está tu cotización:\n\n"
-        f"🔥 Pellet certificado – saco 15 kg\n"
-        f"📦 Cantidad solicitada: {cantidad} sacos\n"
-        f"💰 Precio por saco: ${precio:,}\n"
-        f"🧾 Total estimado: ${total:,}\n\n"
-        f"📍 Retiro en sucursal Coyhaique\n"
-        f"📌 Dirección: Lautaro #257\n\n"
-        f"🏷️ Precio {tipo}\n\n"
-        f"¿Deseas continuar con el pedido o necesitas ajustar la cantidad?"
-    )
-
-    return {"mensaje": mensaje}
-
-# ---------- COTIZAR DIRECTO ----------
-@app.post("/cotizar")
-def cotizar(request: ChatRequest):
-    return chat(request)
+    except Exception as e:
+        return {
+            "error": str(e)
+        }
