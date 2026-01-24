@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Cotizador Pellet</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -12,6 +13,7 @@
       align-items: center;
       height: 100vh;
     }
+
     .card {
       background: white;
       padding: 25px;
@@ -19,10 +21,12 @@
       width: 420px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
+
     h2 {
       text-align: center;
       color: #2e7d32;
     }
+
     textarea {
       width: 100%;
       height: 80px;
@@ -30,6 +34,7 @@
       margin-top: 10px;
       resize: none;
     }
+
     button {
       width: 100%;
       margin-top: 15px;
@@ -41,6 +46,7 @@
       font-size: 16px;
       cursor: pointer;
     }
+
     #resultado {
       margin-top: 15px;
       background: #f0f0f0;
@@ -49,8 +55,15 @@
       white-space: pre-line;
       font-size: 14px;
     }
+
+    #btnWhatsapp {
+      display: none;
+      background: #25D366;
+      margin-top: 10px;
+    }
   </style>
 </head>
+
 <body>
 
 <div class="card">
@@ -62,47 +75,53 @@
   <button onclick="cotizar()">Cotizar</button>
 
   <div id="resultado">Esperando cotización...</div>
+
+  <button id="btnWhatsapp" onclick="enviarWhatsapp()">
+    📲 Enviar por WhatsApp
+  </button>
 </div>
 
 <script>
+let mensajeFinal = "";
+
 async function cotizar() {
   const texto = document.getElementById("mensaje").value;
   const salida = document.getElementById("resultado");
+  const btnWp = document.getElementById("btnWhatsapp");
 
-  salida.innerText = "⏳ Cotizando... (puede tardar unos segundos)";
+  btnWp.style.display = "none";
+  salida.innerText = "⏳ Cotizando...";
 
   try {
     const response = await fetch(
       "https://cotizador-pellet.onrender.com/ia-cotizar",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mensaje: texto })
       }
     );
 
-    if (!response.ok) {
-      throw new Error("Error en el servidor");
-    }
+    if (!response.ok) throw new Error("Error servidor");
 
     const data = await response.json();
-    salida.innerText = data.mensaje;
+    mensajeFinal = data.mensaje;
 
-    const whatsappURL =
-      "https://wa.me/56991422163?text=" +
-      encodeURIComponent(data.mensaje);
-
-    setTimeout(() => {
-      window.open(whatsappURL, "_blank");
-    }, 1200);
+    salida.innerText = mensajeFinal;
+    btnWp.style.display = "block";
 
   } catch (error) {
-    salida.innerText =
-      "❌ Error al cotizar.\nIntente nuevamente en unos segundos.";
+    salida.innerText = "❌ Error al cotizar. Intenta nuevamente.";
     console.error(error);
   }
+}
+
+function enviarWhatsapp() {
+  const url =
+    "https://wa.me/56991422163?text=" +
+    encodeURIComponent(mensajeFinal);
+
+  window.open(url, "_blank");
 }
 </script>
 
