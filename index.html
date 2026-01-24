@@ -1,99 +1,97 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Cotizador Pellet</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .card {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      width: 420px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    textarea {
-      width: 100%;
-      height: 80px;
-      margin-top: 10px;
-      padding: 10px;
-      font-size: 14px;
-    }
-    button {
-      margin-top: 15px;
-      width: 100%;
-      padding: 12px;
-      background: #2e7d32;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .response {
-      margin-top: 15px;
-      background: #f1f1f1;
-      padding: 12px;
-      border-radius: 6px;
-      min-height: 60px;
-      white-space: pre-wrap;
-    }
-    .error {
-      color: red;
-      margin-top: 10px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Cotizador Pellet</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.card {
+  background: white;
+  padding: 30px;
+  width: 420px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.1);
+}
+h2 {
+  text-align: center;
+  color: #2e7d32;
+}
+textarea {
+  width: 100%;
+  height: 90px;
+  padding: 10px;
+}
+button {
+  width: 100%;
+  margin-top: 15px;
+  padding: 12px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+#respuesta {
+  margin-top: 20px;
+  background: #f1f1f1;
+  padding: 15px;
+  border-radius: 5px;
+  white-space: pre-line;
+}
+.error {
+  color: red;
+  margin-top: 10px;
+  text-align: center;
+}
+</style>
 </head>
-<body>
 
+<body>
 <div class="card">
   <h2>🔥 Cotizador Pellet</h2>
   <p><b>Ejemplo:</b> “Necesito 70 sacos de pellet para Coyhaique”</p>
 
-  <textarea id="message">Hola, quiero cotizar pellet</textarea>
-
+  <textarea id="mensaje">Hola, quiero cotizar pellet</textarea>
   <button onclick="cotizar()">Cotizar (Agente)</button>
 
-  <div id="response" class="response"></div>
+  <div id="respuesta"></div>
   <div id="error" class="error"></div>
 </div>
 
 <script>
 async function cotizar() {
-  const message = document.getElementById("message").value;
-  document.getElementById("response").innerText = "";
+  document.getElementById("respuesta").innerText = "";
   document.getElementById("error").innerText = "";
 
   try {
     const res = await fetch("https://cotizador-pellet.onrender.com/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: document.getElementById("mensaje").value
+      })
     });
 
     const data = await res.json();
 
     if (data.reply) {
-      document.getElementById("response").innerText = data.reply;
+      document.getElementById("respuesta").innerText = data.reply;
     } else {
       document.getElementById("error").innerText = "Error en la respuesta del servidor.";
     }
 
-  } catch (err) {
-    document.getElementById("error").innerText = "Error al responder. Intente nuevamente.";
+  } catch (e) {
+    document.getElementById("error").innerText = "No se pudo conectar con el servidor.";
   }
 }
 </script>
-
 </body>
 </html>
