@@ -68,30 +68,36 @@ button {
 
 <script>
 async function cotizar() {
-  document.getElementById("respuesta").innerText = "";
-  document.getElementById("error").innerText = "";
+  const input = document.getElementById("input").value;
+  const output = document.getElementById("output");
+
+  output.innerHTML = "⏳ Consultando agente comercial...";
 
   try {
-    const res = await fetch("https://cotizador-pellet.onrender.com/chat", {
+    const response = await fetch("https://cotizador-pellet.onrender.com/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
-        message: document.getElementById("mensaje").value
+        message: input
       })
     });
 
-    const data = await res.json();
-
-    if (data.reply) {
-      document.getElementById("respuesta").innerText = data.reply;
-    } else {
-      document.getElementById("error").innerText = "Error en la respuesta del servidor.";
+    if (!response.ok) {
+      throw new Error("Error HTTP");
     }
 
-  } catch (e) {
-    document.getElementById("error").innerText = "No se pudo conectar con el servidor.";
+    const data = await response.json();
+
+    // 👇 CLAVE: el backend devuelve "reply"
+    output.innerHTML = data.reply;
+
+  } catch (error) {
+    output.innerHTML = "❌ Error en la respuesta del servidor.";
   }
 }
 </script>
+
 </body>
 </html>
