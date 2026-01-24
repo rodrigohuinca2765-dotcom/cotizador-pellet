@@ -13,14 +13,19 @@ PRECIO_PROMO = 4240      # Desde 60 sacos
 PRECIO_NORMAL = 4990    # Menos de 60 sacos
 
 # =========================
-# CLIENTE OPENAI
+# OPENAI CLIENT
 # =========================
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 # =========================
-# APP
+# APP FASTAPI
 # =========================
-app = FastAPI()
+app = FastAPI(
+    title="Cotizador IA Ecomas",
+    version="1.0"
+)
 
 # =========================
 # MODELO DE ENTRADA
@@ -29,45 +34,42 @@ class ConsultaIA(BaseModel):
     mensaje: str
 
 # =========================
-# HOME (SIN IA)
+# HOME (TEST RENDER)
 # =========================
 @app.get("/")
 def home():
-    return "Cotizador IA Ecomas activo 🤖🔥"
+    return {"status": "Cotizador IA Ecomas activo 🤖🔥"}
 
 # =========================
-# IA COTIZADOR (FINAL)
+# IA COTIZADOR (RUTA CLAVE)
 # =========================
 @app.post("/ia-cotizar")
 def ia_cotizar(data: ConsultaIA):
 
-    # -------- PROMPT DE EXTRACCIÓN --------
-    prompt_extraccion = f"""
-Eres un asistente de extracción de datos comerciales.
+    prompt = f"""
+Extrae SOLO la cantidad de sacos desde el mensaje del cliente.
+Devuelve EXCLUSIVAMENTE un JSON válido.
 
-A partir del mensaje del cliente, devuelve EXCLUSIVAMENTE
-un JSON válido con esta estructura:
-
+Formato EXACTO:
 {{
   "cantidad": <numero_entero>
 }}
 
 Reglas:
-- Si el cliente dice "como 70", "aprox 70", "70 o 75", usa 70
-- Si dice un rango, usa el menor
-- Si no menciona cantidad, usa 0
+- "como 70", "aprox 70" → 70
+- Rangos → usar el menor
+- Si no hay número → 0
 - No escribas texto fuera del JSON
-- No agregues explicaciones
 
-Mensaje del cliente:
+Mensaje:
 \"\"\"{data.mensaje}\"\"\"
 """
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "Eres un extractor de números."},
-            {"role": "user", "content": prompt_extraccion}
+            {"role": "system", "content": "Eres un extractor de números comerciales."},
+            {"role": "user", "content": prompt}
         ],
         temperature=0
     )
@@ -75,7 +77,9 @@ Mensaje del cliente:
     datos = json.loads(response.choices[0].message.content)
     cantidad = int(datos.get("cantidad", 0))
 
-    # -------- LÓGICA DE NEGOCIO (CONTROLADA) --------
+    # =========================
+    # LÓGICA COMERCIAL
+    # =========================
     if cantidad >= 60:
         precio_saco = PRECIO_PROMO
         tipo_precio = "Precio promoción"
@@ -85,7 +89,6 @@ Mensaje del cliente:
 
     total = cantidad * precio_saco
 
-    # -------- MENSAJE COMERCIAL FINAL --------
     mensaje_final = f"""
 Hola 👋, quiero cotizar pellet en {SUCURSAL}.
 
