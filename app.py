@@ -1,111 +1,94 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from datetime import datetime
+import re
+import csv
 import os
-import json
 from openai import OpenAI
 
-# =========================
-# CONFIGURACIÓN ECOMAS
-# =========================
-SUCURSAL = "Coyhaique"
-DIRECCION = "Lautaro #257"
-PRECIO_PROMO = 4240      # Desde 60 sacos
-PRECIO_NORMAL = 4990    # Menos de 60 sacos
+# ===============================
+# CONFIG
+# ===============================
+PRECIO_NORMAL = 4990
+PRECIO_PROMO = 4240
+MIN_PROMO = 60
+SUCURSAL = "Coyhaique (Lautaro #257)"
 
-# =========================
-# OPENAI CLIENT
-# =========================
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
-)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# =========================
-# APP FASTAPI
-# =========================
 app = FastAPI(
-    title="Cotizador IA Ecomas",
+    title="Cotizador Pellet Ecomas 🔥",
+    description="Cotizador inteligente con IA + QR + WhatsApp",
     version="1.0"
 )
 
-# =========================
-# MODELO DE ENTRADA
-# =========================
-class ConsultaIA(BaseModel):
+# ===============================
+# MODELO INPUT
+# ===============================
+class Consulta(BaseModel):
     mensaje: str
 
-# =========================
-# HOME (TEST RENDER)
-# =========================
+# ===============================
+# FUNCIONES
+# ===============================
+def extraer_cantidad(texto: str) -> int:
+    numeros = re.findall(r"\d+", texto)
+    return int(numeros[0]) if numeros else 0
+
+def guardar_csv(cantidad, precio, total, tipo):
+    existe = os.path.exists("cotizaciones.csv")
+    with open("cotizaciones.csv", "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not existe:
+            writer.writerow([
+                "fecha_hora", "cantidad", "precio_unitario",
+                "total", "tipo_precio", "sucursal"
+            ])
+        writer.writerow([
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            cantidad, precio, total, tipo, SUCURSAL
+        ])
+
+# ===============================
+# ENDPOINT RAÍZ (TEST)
+# ===============================
 @app.get("/")
 def home():
-    return {"status": "Cotizador IA Ecomas activo 🤖🔥"}
+    return {"status": "Cotizador activo 🔥"}
 
-# =========================
-# IA COTIZADOR (RUTA CLAVE)
-# =========================
+# ===============================
+# ENDPOINT IA
+# ===============================
 @app.post("/ia-cotizar")
-def ia_cotizar(data: ConsultaIA):
+def cotizar(data: Consulta):
+    texto = data.mensaje
+    cantidad = extraer_cantidad(texto)
 
-    prompt = f"""
-Extrae SOLO la cantidad de sacos desde el mensaje del cliente.
-Devuelve EXCLUSIVAMENTE un JSON válido.
-
-Formato EXACTO:
-{{
-  "cantidad": <numero_entero>
-}}
-
-Reglas:
-- "como 70", "aprox 70" → 70
-- Rangos → usar el menor
-- Si no hay número → 0
-- No escribas texto fuera del JSON
-
-Mensaje:
-\"\"\"{data.mensaje}\"\"\"
-"""
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Eres un extractor de números comerciales."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0
-    )
-
-    datos = json.loads(response.choices[0].message.content)
-    cantidad = int(datos.get("cantidad", 0))
-
-    # =========================
-    # LÓGICA COMERCIAL
-    # =========================
-    if cantidad >= 60:
-        precio_saco = PRECIO_PROMO
-        tipo_precio = "Precio promoción"
+    if cantidad >= MIN_PROMO:
+        precio = PRECIO_PROMO
+        tipo = "Precio promoción"
     else:
-        precio_saco = PRECIO_NORMAL
-        tipo_precio = "Precio normal"
+        precio = PRECIO_NORMAL
+        tipo = "Precio normal"
 
-    total = cantidad * precio_saco
+    total = cantidad * precio
 
-    mensaje_final = f"""
-Hola 👋, quiero cotizar pellet en {SUCURSAL}.
+    guardar_csv(cantidad, precio, total, tipo)
 
-🔥 Pellet certificado – saco 15 kg
-📦 Cantidad solicitada: {cantidad} sacos
-💰 Precio por saco: ${precio_saco}
-🧾 Total estimado: ${total}
-
-📍 Retiro en sucursal {SUCURSAL}
-📌 Dirección: {DIRECCION}
-
-🔖 {tipo_precio}
-""".strip()
+    mensaje_final = (
+        f"Hola 👋, quiero cotizar pellet en Coyhaique.\n\n"
+        f"🔥 Pellet certificado – saco 15 kg\n"
+        f"📦 Cantidad solicitada: {cantidad} sacos\n"
+        f"💰 Precio por saco: ${precio:,}\n"
+        f"🧾 Total estimado: ${total:,}\n\n"
+        f"📍 Retiro en sucursal {SUCURSAL}\n"
+        f"ℹ️ {tipo}"
+    )
 
     return {
         "cantidad": cantidad,
-        "precio_saco": precio_saco,
+        "precio_saco": precio,
         "total": total,
+        "tipo_precio": tipo,
         "mensaje": mensaje_final
     }
