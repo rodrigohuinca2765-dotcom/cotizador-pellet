@@ -63,7 +63,8 @@ async function cotizar() {
   const texto = document.getElementById("mensaje").value;
   const salida = document.getElementById("resultado");
 
-  salida.innerText = "⏳ Cotizando...";
+  salida.innerText = "⏳ Cotizando...\n(Si es la primera vez, puede tardar hasta 1 minuto)";
+
 
   try {
     const response = await fetch("https://cotizador-pellet.onrender.com/ia-cotizar", {
