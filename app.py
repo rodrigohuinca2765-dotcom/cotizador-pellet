@@ -23,10 +23,10 @@ def cotizar():
 
     # Precios
     precio_normal = 4990
-    precio_promo = 4240
+    precio_promo = 4290
 
     # Lógica de precio
-    if cantidad >= 60:
+    if cantidad >= 48:
         precio_saco = precio_promo
         tipo_precio = "Precio PROMOCIÓN aplicado"
     else:
@@ -36,7 +36,7 @@ def cotizar():
     total = cantidad * precio_saco
 
     # Lógica de despacho
-    if cantidad >= 12:
+    if cantidad >= 16:
         despacho = "Despacho a domicilio GRATIS dentro de Coyhaique"
     else:
         despacho = "Retiro en sucursal Coyhaique (Lautaro #257)"
