@@ -67,37 +67,42 @@ button {
 </div>
 
 <script>
-async function cotizar() {
-  const input = document.getElementById("input").value;
-  const output = document.getElementById("output");
+  async function cotizar() {
+    const input = document.getElementById("userInput").value;
+    const resultBox = document.getElementById("result");
 
-  output.innerHTML = "⏳ Consultando agente comercial...";
+    resultBox.innerHTML = "⏳ Consultando agente de ventas...";
 
-  try {
-    const response = await fetch("https://cotizador-pellet.onrender.com/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: input
-      })
-    });
+    try {
+      const response = await fetch("https://cotizador-pellet.onrender.com/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: input
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error("Error HTTP");
+      const data = await response.json();
+
+      if (data.reply) {
+        resultBox.innerHTML = `
+          <div style="white-space: pre-line;">
+            ${data.reply}
+          </div>
+        `;
+      } else if (data.error) {
+        resultBox.innerHTML = "❌ Error: " + data.error;
+      } else {
+        resultBox.innerHTML = "⚠️ No se recibió respuesta del agente.";
+      }
+
+    } catch (error) {
+      console.error(error);
+      resultBox.innerHTML = "❌ Error al conectar con el servidor.";
     }
-
-    const data = await response.json();
-
-    // 👇 CLAVE: el backend devuelve "reply"
-    output.innerHTML = data.reply;
-
-  } catch (error) {
-    output.innerHTML = "❌ Error en la respuesta del servidor.";
   }
-}
 </script>
-
 </body>
 </html>
