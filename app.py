@@ -1,110 +1,119 @@
 from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+import os
+from openai import OpenAI
+
+# =============================
+# CONFIGURACIÓN
+# =============================
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = Flask(__name__)
 
-@app.route("/", methods=["GET"])
-def home():
-    return "Cotizador de Pellet activo 🔥"
+# =============================
+# REGLAS DE NEGOCIO (ECOMAS)
+# =============================
+PRECIO_NORMAL = 4990
+PRECIO_PROMO = 4290
+MIN_PROMO = 60
 
-# -------------------------------
-# PASO A + B: COTIZADOR
-# -------------------------------
-@app.route("/cotizar", methods=["POST"])
-def cotizar():
-    data = request.get_json()
-    cantidad = int(data.get("cantidad", 0))
+DIRECCION = "Lautaro #257, Coyhaique"
+DESPACHO_GRATIS_DESDE = 12
 
-    precio_normal = 4990
-    precio_promo = 4290
-
-    if cantidad >= 60:
-        precio = precio_promo
-        tipo_precio = "Precio PROMOCIÓN aplicado"
+# =============================
+# FUNCIÓN COTIZAR
+# =============================
+def cotizar(cantidad: int):
+    if cantidad >= MIN_PROMO:
+        precio = PRECIO_PROMO
+        tipo = "Precio PROMOCIÓN aplicado"
     else:
-        precio = precio_normal
-        tipo_precio = "Precio normal"
+        precio = PRECIO_NORMAL
+        tipo = "Precio normal"
 
     total = cantidad * precio
 
-    if cantidad >= 12:
+    if cantidad >= DESPACHO_GRATIS_DESDE:
         despacho = "Despacho a domicilio GRATIS dentro de Coyhaique"
     else:
-        despacho = "Retiro en sucursal Coyhaique (Lautaro #257)"
-
-    if cantidad < 12:
-        sugerencia_ia = (
-            "💡 Desde 12 sacos obtienes despacho a domicilio GRATIS dentro de Coyhaique."
-        )
-    elif cantidad < 60:
-        sugerencia_ia = (
-            f"💡 Si llegas a 60 sacos accedes a PRECIO PROMOCIÓN por saco."
-        )
-    else:
-        sugerencia_ia = (
-            "✅ Estás aprovechando el mejor precio disponible."
-        )
+        despacho = f"Retiro en sucursal Coyhaique ({DIRECCION})"
 
     mensaje = (
-        "Hola 👋, quiero cotizar pellet en Coyhaique.\n\n"
-        f"📦 Cantidad: {cantidad} sacos (15 kg)\n"
+        f"🔥 Cotización de Pellet – Coyhaique\n\n"
+        f"🪵 Pellet certificado – saco 15 kg\n"
+        f"📦 Cantidad: {cantidad} sacos\n"
         f"💰 Precio por saco: ${precio:,}\n"
-        f"🧾 Total: ${total:,}\n\n"
+        f"🧾 Total estimado: ${total:,}\n\n"
         f"🚚 {despacho}\n"
-        f"🤖 {sugerencia_ia}"
+        f"ℹ️ {tipo}"
     )
 
-    return jsonify({
+    return {
         "cantidad": cantidad,
         "precio_saco": precio,
-        "tipo_precio": tipo_precio,
-        "total": total,
+        "tipo_precio": tipo,
         "despacho": despacho,
+        "total": total,
         "mensaje": mensaje
-    })
+    }
 
+# =============================
+# IA: INTERPRETAR MENSAJE
+# =============================
+def interpretar_con_ia(texto_usuario: str):
+    prompt = f"""
+Eres un asesor de ventas experto de Ecomas en Coyhaique.
+Reglas:
+- Nunca inventes precios
+- Si no hay cantidad, responde informativo
+- Si el usuario pregunta por recomendación, explica
+- Sé claro, cercano y profesional
 
-# -------------------------------
-# PASO C: IA CONVERSACIONAL
-# -------------------------------
-@app.route("/chat", methods=["POST"])
-def chat():
-    data = request.get_json()
-    texto = data.get("mensaje", "").lower()
+Mensaje del cliente:
+\"\"\"{texto_usuario}\"\"\"
+"""
 
-    if "precio" in texto or "valor" in texto:
-        respuesta = (
-            "💰 El valor por saco es $4.990.\n"
-            "🔥 Desde 60 sacos accedes a precio PROMOCIÓN de $4.290."
-        )
+    respuesta = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "Eres un vendedor experto de pellet."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.4
+    )
 
-    elif "despacho" in texto or "envío" in texto:
-        respuesta = (
-            "🚚 Desde 12 sacos el despacho es GRATIS dentro de Coyhaique.\n"
-            "📍 Menos de 12 sacos es retiro en sucursal."
-        )
+    return respuesta.choices[0].message.content
 
-    elif "cuantos" in texto or "recomiendas" in texto:
-        respuesta = (
-            "🏠 Para una vivienda promedio recomendamos entre 20 y 40 sacos.\n"
-            "🔥 Para el mejor precio, 60 sacos es la opción ideal."
-        )
+# =============================
+# ENDPOINT PRINCIPAL
+# =============================
+@app.route("/cotizar", methods=["POST"])
+def cotizar_endpoint():
+    data = request.json or {}
 
-    elif "hola" in texto:
-        respuesta = (
-            "Hola 👋 Soy el asistente de Ecomas.\n"
-            "Puedo ayudarte a cotizar, recomendar cantidad o resolver dudas."
-        )
+    # CASO 1: viene cantidad
+    if "cantidad" in data:
+        try:
+            cantidad = int(data["cantidad"])
+            return jsonify(cotizar(cantidad))
+        except:
+            return jsonify({"error": "Cantidad inválida"}), 400
 
-    else:
-        respuesta = (
-            "🤖 Puedo ayudarte con precios, despacho o recomendación de cantidad.\n"
-            "¿Qué te gustaría saber?"
-        )
+    # CASO 2: viene mensaje (IA)
+    if "mensaje" in data:
+        texto = data["mensaje"]
+        respuesta_ia = interpretar_con_ia(texto)
 
-    return jsonify({
-        "respuesta": respuesta
-    })
+        return jsonify({
+            "mensaje": respuesta_ia,
+            "nota": "Respuesta generada por IA"
+        })
 
+    return jsonify({"error": "Debes enviar cantidad o mensaje"}), 400
 
+# =============================
+# ARRANQUE
+# =============================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True)
