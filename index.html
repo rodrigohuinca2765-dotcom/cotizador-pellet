@@ -2,184 +2,142 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cotizador Pellet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    body{
+    body {
       font-family: Arial, sans-serif;
-      background:#f2f4f6;
-      margin:0;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
     }
-    .card{
-      width: 520px;
-      max-width: 92vw;
-      background:white;
-      border-radius:12px;
-      box-shadow:0 8px 24px rgba(0,0,0,.12);
-      padding:26px 26px 20px 26px;
-      text-align:center;
+
+    .card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 420px;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      text-align: center;
     }
-    h1{
-      margin:0 0 6px 0;
-      color:#2e7d32;
-      font-size:28px;
+
+    h1 {
+      margin-top: 0;
+      color: #2e7d32;
     }
-    .hint{
-      margin: 0 0 14px 0;
-      color:#666;
-      font-size:14px;
+
+    .ejemplo {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 10px;
     }
-    textarea{
-      width:100%;
-      height:90px;
-      resize:none;
-      border:1px solid #cfd8dc;
-      border-radius:8px;
-      padding:12px;
-      font-size:15px;
-      box-sizing:border-box;
+
+    textarea {
+      width: 100%;
+      height: 90px;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      resize: none;
+      box-sizing: border-box;
     }
-    button{
-      width:100%;
-      margin-top:12px;
-      border:none;
-      border-radius:8px;
-      padding:12px;
-      font-size:16px;
-      cursor:pointer;
-      background:#2e7d32;
-      color:white;
-      font-weight:bold;
+
+    button {
+      width: 100%;
+      margin-top: 15px;
+      padding: 12px;
+      background: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
     }
-    button:disabled{
-      opacity:.6;
-      cursor:not-allowed;
+
+    button:hover {
+      background: #256428;
     }
-    .box{
-      margin-top:14px;
-      text-align:left;
-      background:#f6f6f6;
-      border-radius:8px;
-      padding:12px;
-      min-height:64px;
-      white-space:pre-wrap;
-      line-height:1.35;
+
+    #respuesta {
+      margin-top: 15px;
+      padding: 12px;
+      background: #f1f1f1;
+      border-radius: 6px;
+      font-size: 14px;
+      text-align: left;
+      min-height: 40px;
     }
-    .error{
-      margin-top:10px;
-      color:#c62828;
-      font-weight:bold;
-      text-align:center;
-    }
-    .wa{
-      margin-top:12px;
-      background:#25D366;
-    }
-    .muted{
-      color:#666;
-      font-size:13px;
-    }
-    .row{
-      display:flex;
-      gap:10px;
-      margin-top:12px;
+
+    .error {
+      color: #c62828;
+      font-weight: bold;
+      text-align: center;
     }
   </style>
 </head>
+
 <body>
+
   <div class="card">
     <h1>🔥 Cotizador Pellet</h1>
-    <p class="hint"><b>Ejemplo:</b> “Necesito 70 sacos de pellet para Coyhaique”</p>
 
-    <textarea id="msg">Hola, quiero cotizar pellet</textarea>
-
-    <div class="row">
-      <button id="btn" onclick="enviar()">Cotizar (Agente)</button>
+    <div class="ejemplo">
+      Ejemplo: <em>“Necesito 70 sacos de pellet para Coyhaique”</em>
     </div>
 
-    <div id="resp" class="box"><span class="muted">Escribe tu solicitud y presiona “Cotizar (Agente)”.</span></div>
+    <textarea id="mensaje" placeholder="Escribe tu solicitud aquí..."></textarea>
 
-    <button id="btnWA" class="wa" style="display:none;" onclick="abrirWA()">📲 Enviar por WhatsApp</button>
+    <button onclick="cotizar()">Cotizar (Agente)</button>
 
-    <div id="err" class="error"></div>
+    <div id="respuesta"></div>
   </div>
 
-<script>
-  // ✅ TU BACKEND EN RENDER:
-  const API_BASE = "https://cotizador-pellet.onrender.com";
+  <script>
+    async function cotizar() {
+      const input = document.getElementById("mensaje");
+      const respuesta = document.getElementById("respuesta");
+      const texto = input.value.trim();
 
-  // Historial básico del chat (cliente/agente)
-  let history = [];
-  let lastWhatsappUrl = null;
+      if (!texto) {
+        respuesta.innerHTML = "<div class='error'>✍️ Por favor escribe tu solicitud.</div>";
+        return;
+      }
 
-  async function enviar(){
-    const btn = document.getElementById("btn");
-    const err = document.getElementById("err");
-    const resp = document.getElementById("resp");
-    const btnWA = document.getElementById("btnWA");
+      respuesta.innerHTML = "⏳ El asesor está respondiendo...";
 
-    err.textContent = "";
-    btnWA.style.display = "none";
-    lastWhatsappUrl = null;
+      try {
+        const res = await fetch("https://cotizador-pellet.onrender.com/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            mensaje: texto
+          })
+        });
 
-    const mensaje = document.getElementById("msg").value.trim();
-    if(!mensaje){
-      err.textContent = "Escribe un mensaje para cotizar.";
-      return;
+        if (!res.ok) {
+          throw new Error("Error de servidor");
+        }
+
+        const data = await res.json();
+
+        respuesta.innerHTML = `
+          💬 <strong>Asesor Ecomas:</strong><br><br>
+          ${data.mensaje.replace(/\n/g, "<br>")}
+        `;
+      } catch (error) {
+        respuesta.innerHTML = "<div class='error'>❌ Error al responder. Intente nuevamente.</div>";
+        console.error(error);
+      }
     }
+  </script>
 
-    btn.disabled = true;
-    resp.textContent = "⏳ Esperando respuesta del agente…";
-
-    // guardamos mensaje del usuario en historial
-    history.push({ role: "user", content: mensaje });
-
-    try{
-      const r = await fetch(`${API_BASE}/chat`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ mensaje, history })
-      });
-
-      if(!r.ok){
-        throw new Error("Respuesta no OK: " + r.status);
-      }
-
-      const data = await r.json();
-
-      if(!data.ok){
-        throw new Error("API respondió ok=false");
-      }
-
-      const agentReply = data.agent_reply || "No hubo respuesta.";
-      resp.textContent = agentReply;
-
-      // guardamos respuesta del agente en historial
-      history.push({ role: "assistant", content: agentReply });
-
-      // Si viene WhatsApp listo, mostramos botón
-      if(data.ready_for_whatsapp && data.whatsapp_url){
-        lastWhatsappUrl = data.whatsapp_url;
-        btnWA.style.display = "block";
-      }
-
-    }catch(e){
-      console.error(e);
-      err.textContent = "Error al responder. Intente nuevamente.";
-      resp.textContent = "";
-    }finally{
-      btn.disabled = false;
-    }
-  }
-
-  function abrirWA(){
-    if(!lastWhatsappUrl) return;
-    window.open(lastWhatsappUrl, "_blank");
-  }
-</script>
 </body>
 </html>
