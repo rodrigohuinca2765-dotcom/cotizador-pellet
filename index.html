@@ -1,41 +1,50 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Cotizador de Pellet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f2f4f6;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
       margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .card {
       background: #ffffff;
-      padding: 25px;
+      width: 100%;
+      max-width: 380px;
+      padding: 24px;
       border-radius: 12px;
-      width: 360px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.1);
       text-align: center;
     }
 
     h1 {
-      margin-bottom: 15px;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 6px;
+      text-align: left;
     }
 
     input {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       font-size: 16px;
-      margin-bottom: 12px;
+      margin-bottom: 15px;
       border-radius: 6px;
       border: 1px solid #ccc;
+      box-sizing: border-box;
     }
 
     button {
@@ -48,21 +57,27 @@
       margin-top: 8px;
     }
 
-    .btn-cotizar {
+    .btn-primary {
       background: #2ecc71;
-      color: #fff;
+      color: white;
     }
 
     .btn-whatsapp {
       background: #25d366;
-      color: #fff;
+      color: white;
     }
 
-    #resultado {
+    .resultado {
       margin-top: 15px;
-      text-align: left;
       white-space: pre-line;
       font-size: 14px;
+      text-align: left;
+    }
+
+    .error {
+      color: red;
+      margin-top: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -72,64 +87,70 @@
   <div class="card">
     <h1>🔥 Cotizador de Pellet</h1>
 
-    <label><strong>Cantidad de sacos (15 kg c/u)</strong></label>
-    <input type="number" id="cantidad" placeholder="Ej: 60">
+    <label for="cantidad">Cantidad de sacos (15 kg c/u)</label>
+    <input type="number" id="cantidad" placeholder="Ej: 60" />
 
-    <button class="btn-cotizar" onclick="cotizar()">Cotizar</button>
+    <button class="btn-primary" onclick="cotizar()">Cotizar</button>
 
-    <div id="resultado"></div>
+    <div id="error" class="error"></div>
+    <div id="resultado" class="resultado"></div>
 
-    <button class="btn-whatsapp" onclick="enviarWhatsApp()">
-      📲 Enviar cotización por WhatsApp
-    </button>
+    <button class="btn-whatsapp" onclick="enviarWhatsApp()">📲 Enviar cotización por WhatsApp</button>
   </div>
 
   <script>
-    const API_URL = "https://cotizador-pellet.onrender.com/cotizar";
-    let mensajeWhatsapp = "";
+    // 🔴🔴🔴 CAMBIA SOLO ESTA URL 🔴🔴🔴
+    // Pega aquí EXACTAMENTE la URL que te da Render
+    const API_URL = "https://TU-URL-REAL-DE-RENDER.onrender.com/cotizar";
+
+    let mensajeWhatsApp = "";
 
     async function cotizar() {
       const cantidad = document.getElementById("cantidad").value;
-      const resultado = document.getElementById("resultado");
+      const errorDiv = document.getElementById("error");
+      const resultadoDiv = document.getElementById("resultado");
+
+      errorDiv.innerText = "";
+      resultadoDiv.innerText = "";
 
       if (!cantidad || cantidad <= 0) {
-        resultado.innerHTML = "⚠️ Ingresa una cantidad válida de sacos.";
+        errorDiv.innerText = "❌ Ingresa una cantidad válida.";
         return;
       }
-
-      resultado.innerHTML = "⏳ Calculando cotización...";
 
       try {
         const response = await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ cantidad: Number(cantidad) })
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ cantidad: parseInt(cantidad) })
         });
 
+        if (!response.ok) {
+          throw new Error("Error servidor");
+        }
+
         const data = await response.json();
-        mensajeWhatsapp = data.mensaje;
 
-        resultado.innerHTML = `
-✅ <strong>Cotización lista</strong>
-
-${data.mensaje}
-        `;
+        resultadoDiv.innerText = data.mensaje;
+        mensajeWhatsApp = data.mensaje;
 
       } catch (error) {
-        resultado.innerHTML = "❌ Error al conectar con el servidor.";
-        console.error(error);
+        errorDiv.innerText = "❌ Error al conectar con el servidor.";
       }
     }
 
     function enviarWhatsApp() {
-      if (!mensajeWhatsapp) {
+      if (!mensajeWhatsApp) {
         alert("Primero debes generar una cotización.");
         return;
       }
 
-      const numero = "56991422163";
-      const texto = encodeURIComponent(mensajeWhatsapp);
-      const url = `https://wa.me/${numero}?text=${texto}`;
+      const telefono = "56991422163"; // ✅ tu número
+      const texto = encodeURIComponent(mensajeWhatsApp);
+      const url = `https://wa.me/${telefono}?text=${texto}`;
+
       window.open(url, "_blank");
     }
   </script>
