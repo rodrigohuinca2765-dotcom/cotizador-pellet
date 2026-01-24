@@ -3,82 +3,55 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from openai import OpenAI
 
-# ---------- CONFIG ----------
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 PRECIO_NORMAL = 4990
 PRECIO_PROMO = 4240
 MIN_PROMO = 60
 
-# ---------- APP ----------
-app = FastAPI(
-    title="Cotizador Pellet Ecomas",
-    description="Cotizador inteligente con IA",
-    version="1.0"
-)
+app = FastAPI(title="Agente de Ventas Pellet Ecomas")
 
 class IARequest(BaseModel):
     mensaje: str
+    contexto: list | None = []
 
-# ---------- RUTA RAÍZ ----------
 @app.get("/")
 def home():
-    return {"status": "Cotizador de Pellet activo 🔥"}
+    return {"status": "Agente de ventas Ecomas activo 🔥"}
 
-# ---------- IA COTIZADOR ----------
 @app.post("/ia-cotizar")
 def ia_cotizar(data: IARequest):
 
-    prompt = f"""
-Eres un asistente comercial de Ecomas Pellet Coyhaique.
+    system_prompt = f"""
+Eres un AGENTE DE VENTAS de Ecomas Pellet Coyhaique.
 
-Tarea:
-1. Detecta cuántos sacos de pellet quiere el cliente.
-2. Si no indica cantidad, asume 0.
-3. Responde SOLO en JSON con esta estructura:
-
-{{
-  "cantidad": numero,
-  "mensaje": "mensaje final al cliente"
-}}
-
-Mensaje del cliente:
-\"{data.mensaje}\"
+Reglas:
+- Conversa con el cliente de forma natural.
+- Si NO sabes la cantidad, pregunta cuántos sacos necesita.
+- Si sabes la cantidad pero no la ciudad, pregunta la ciudad.
+- Cuando tengas cantidad y ciudad, entrega la cotización completa.
+- Aplica precio promoción si cantidad >= {MIN_PROMO}.
+- NO inventes datos.
+- NO uses emojis en exceso.
+- Responde siempre en español.
 """
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    if data.contexto:
+        messages.extend(data.contexto)
+
+    messages.append({"role": "user", "content": data.mensaje})
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2
+        messages=messages,
+        temperature=0.3
     )
 
-    ia_json = eval(response.choices[0].message.content)
-
-    cantidad = int(ia_json.get("cantidad", 0))
-
-    if cantidad >= MIN_PROMO:
-        precio = PRECIO_PROMO
-        tipo = "Precio PROMOCIÓN"
-    else:
-        precio = PRECIO_NORMAL
-        tipo = "Precio normal"
-
-    total = cantidad * precio
-
-    mensaje_final = (
-        f"Hola 👋, quiero cotizar pellet en Coyhaique.\n\n"
-        f"🔥 Pellet certificado – saco 15 kg\n"
-        f"📦 Cantidad solicitada: {cantidad} sacos\n"
-        f"💰 Precio por saco: ${precio:,}\n"
-        f"🧾 Total estimado: ${total:,}\n\n"
-        f"📍 Retiro en sucursal Coyhaique\n"
-        f"📌 Dirección: Lautaro #257\n\n"
-        f"👉 {tipo}"
-    )
+    respuesta = response.choices[0].message.content
 
     return {
-        "cantidad": cantidad,
-        "precio_saco": precio,
-        "total": total,
-        "mensaje": mensaje_final
+        "mensaje": respuesta,
+        "nuevo_contexto": messages + [{"role": "assistant", "content": respuesta}]
     }
