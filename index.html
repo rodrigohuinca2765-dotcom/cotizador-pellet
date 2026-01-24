@@ -3,148 +3,115 @@
 <head>
   <meta charset="UTF-8" />
   <title>Cotizador Pellet</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
+      background: #f4f6f8;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       height: 100vh;
       margin: 0;
     }
-
     .card {
-      background: #ffffff;
-      padding: 25px;
+      background: white;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
       border-radius: 10px;
-      width: 420px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
       text-align: center;
     }
-
     h2 {
+      margin-top: 0;
       color: #2e7d32;
-      margin-bottom: 15px;
     }
-
     textarea {
       width: 100%;
-      box-sizing: border-box;
+      height: 90px;
+      margin: 10px 0;
       padding: 10px;
       font-size: 14px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      resize: none;
-      display: block;
-      margin: 0 auto;
     }
-
     button {
       width: 100%;
       padding: 12px;
-      margin-top: 12px;
-      font-size: 16px;
+      background: #2e7d32;
+      color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
+      font-size: 16px;
       cursor: pointer;
     }
-
-    .btn-cotizar {
-      background-color: #2e7d32;
-      color: white;
+    button:hover {
+      background: #256428;
     }
-
-    .btn-whatsapp {
-      background-color: #25d366;
-      color: white;
-    }
-
     .respuesta {
-      background: #f7f7f7;
-      padding: 12px;
       margin-top: 15px;
-      border-radius: 5px;
+      padding: 12px;
+      background: #f1f1f1;
+      border-radius: 6px;
+      font-size: 14px;
       text-align: left;
       white-space: pre-line;
-      font-size: 14px;
     }
-
-    small {
-      color: #666;
-      display: block;
-      margin-bottom: 6px;
-      text-align: left;
+    .error {
+      color: #c62828;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
-
   <div class="card">
     <h2>🔥 Cotizador Pellet</h2>
 
-    <small>Ejemplo: “Necesito 70 sacos de pellet para Coyhaique”</small>
+    <p style="font-size:13px;color:#555;">
+      Ejemplo: <br>
+      <i>Necesito 70 sacos de pellet para Coyhaique</i>
+    </p>
 
-    <textarea
-      id="mensaje"
-      rows="4"
-      placeholder="Ejemplo: Necesito 70 sacos de pellet para Coyhaique">
-    </textarea>
+    <textarea id="mensaje">Hola, quiero cotizar pellet</textarea>
 
-    <button class="btn-cotizar" onclick="cotizar()">Cotizar</button>
+    <button onclick="cotizar()">Cotizar</button>
 
     <div id="respuesta" class="respuesta" style="display:none;"></div>
-
-    <button
-      id="btnWhatsapp"
-      class="btn-whatsapp"
-      style="display:none;"
-      onclick="enviarWhatsapp()">
-      📲 Enviar por WhatsApp
-    </button>
+    <div id="error" class="error"></div>
   </div>
 
-<script>
-let contexto = [];
-let textoWhatsapp = "";
+  <script>
+    async function cotizar() {
+      const mensaje = document.getElementById("mensaje").value;
+      const respuestaDiv = document.getElementById("respuesta");
+      const errorDiv = document.getElementById("error");
 
-function cotizar() {
-  const mensaje = document.getElementById("mensaje").value;
-  const respuestaDiv = document.getElementById("respuesta");
+      respuestaDiv.style.display = "none";
+      errorDiv.innerText = "";
 
-  respuestaDiv.style.display = "block";
-  respuestaDiv.innerText = "Escribiendo respuesta...";
+      try {
+        const res = await fetch("https://cotizador-pellet.onrender.com/ia-cotizar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ mensaje })
+        });
 
-  fetch("https://cotizador-pellet.onrender.com/ia-cotizar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      mensaje: mensaje,
-      contexto: contexto
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    respuestaDiv.innerText = data.mensaje;
-    textoWhatsapp = data.mensaje;
-    contexto = data.nuevo_contexto;
+        if (!res.ok) {
+          throw new Error("Respuesta inválida del servidor");
+        }
 
-    document.getElementById("btnWhatsapp").style.display = "block";
-    document.getElementById("mensaje").value = "";
-  })
-  .catch(() => {
-    respuestaDiv.innerText = "Error al responder. Intente nuevamente.";
-  });
-}
+        const data = await res.json();
 
-function enviarWhatsapp() {
-  const numero = "56991422163";
-  const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(textoWhatsapp);
-  window.open(url, "_blank");
-}
-</script>
+        respuestaDiv.innerText = data.mensaje;
+        respuestaDiv.style.display = "block";
 
+      } catch (error) {
+        errorDiv.innerText = "Error al responder. Intente nuevamente.";
+        console.error(error);
+      }
+    }
+  </script>
 </body>
 </html>
