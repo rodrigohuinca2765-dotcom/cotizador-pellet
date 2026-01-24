@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Cotizador Pellet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,44 +11,25 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      margin: 0;
     }
-
     .card {
-      background: #ffffff;
-      width: 100%;
-      max-width: 420px;
-      padding: 25px;
+      background: white;
+      padding: 30px;
       border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
       text-align: center;
     }
-
-    h1 {
-      margin-top: 0;
-      color: #2e7d32;
-    }
-
-    .ejemplo {
-      font-size: 14px;
-      color: #555;
-      margin-bottom: 10px;
-    }
-
     textarea {
       width: 100%;
-      height: 90px;
+      height: 80px;
+      margin-top: 10px;
       padding: 10px;
       font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      resize: none;
-      box-sizing: border-box;
     }
-
     button {
-      width: 100%;
       margin-top: 15px;
+      width: 100%;
       padding: 12px;
       background: #2e7d32;
       color: white;
@@ -59,85 +38,62 @@
       font-size: 16px;
       cursor: pointer;
     }
-
-    button:hover {
-      background: #256428;
-    }
-
-    #respuesta {
+    .response {
       margin-top: 15px;
-      padding: 12px;
       background: #f1f1f1;
+      padding: 12px;
       border-radius: 6px;
-      font-size: 14px;
-      text-align: left;
-      min-height: 40px;
+      min-height: 60px;
+      white-space: pre-wrap;
     }
-
     .error {
-      color: #c62828;
-      font-weight: bold;
-      text-align: center;
+      color: red;
+      margin-top: 10px;
     }
   </style>
 </head>
-
 <body>
 
-  <div class="card">
-    <h1>🔥 Cotizador Pellet</h1>
+<div class="card">
+  <h2>🔥 Cotizador Pellet</h2>
+  <p><b>Ejemplo:</b> “Necesito 70 sacos de pellet para Coyhaique”</p>
 
-    <div class="ejemplo">
-      Ejemplo: <em>“Necesito 70 sacos de pellet para Coyhaique”</em>
-    </div>
+  <textarea id="message">Hola, quiero cotizar pellet</textarea>
 
-    <textarea id="mensaje" placeholder="Escribe tu solicitud aquí..."></textarea>
+  <button onclick="cotizar()">Cotizar (Agente)</button>
 
-    <button onclick="cotizar()">Cotizar (Agente)</button>
+  <div id="response" class="response"></div>
+  <div id="error" class="error"></div>
+</div>
 
-    <div id="respuesta"></div>
-  </div>
+<script>
+async function cotizar() {
+  const message = document.getElementById("message").value;
+  document.getElementById("response").innerText = "";
+  document.getElementById("error").innerText = "";
 
-  <script>
-    async function cotizar() {
-      const input = document.getElementById("mensaje");
-      const respuesta = document.getElementById("respuesta");
-      const texto = input.value.trim();
+  try {
+    const res = await fetch("https://cotizador-pellet.onrender.com/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message })
+    });
 
-      if (!texto) {
-        respuesta.innerHTML = "<div class='error'>✍️ Por favor escribe tu solicitud.</div>";
-        return;
-      }
+    const data = await res.json();
 
-      respuesta.innerHTML = "⏳ El asesor está respondiendo...";
-
-      try {
-        const res = await fetch("https://cotizador-pellet.onrender.com/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            mensaje: texto
-          })
-        });
-
-        if (!res.ok) {
-          throw new Error("Error de servidor");
-        }
-
-        const data = await res.json();
-
-        respuesta.innerHTML = `
-          💬 <strong>Asesor Ecomas:</strong><br><br>
-          ${data.mensaje.replace(/\n/g, "<br>")}
-        `;
-      } catch (error) {
-        respuesta.innerHTML = "<div class='error'>❌ Error al responder. Intente nuevamente.</div>";
-        console.error(error);
-      }
+    if (data.reply) {
+      document.getElementById("response").innerText = data.reply;
+    } else {
+      document.getElementById("error").innerText = "Error en la respuesta del servidor.";
     }
-  </script>
+
+  } catch (err) {
+    document.getElementById("error").innerText = "Error al responder. Intente nuevamente.";
+  }
+}
+</script>
 
 </body>
 </html>
