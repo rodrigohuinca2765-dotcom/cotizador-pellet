@@ -106,40 +106,45 @@
     </button>
   </div>
 
-  <script>
-    let textoWhatsapp = "";
+<script>
+let contexto = [];
+let textoWhatsapp = "";
 
-    function cotizar() {
-      const mensaje = document.getElementById("mensaje").value;
-      const respuestaDiv = document.getElementById("respuesta");
+function cotizar() {
+  const mensaje = document.getElementById("mensaje").value;
+  const respuestaDiv = document.getElementById("respuesta");
 
-      respuestaDiv.style.display = "block";
-      respuestaDiv.innerText = "Esperando cotización...";
+  respuestaDiv.style.display = "block";
+  respuestaDiv.innerText = "Escribiendo respuesta...";
 
-      fetch("https://cotizador-pellet.onrender.com/ia-cotizar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ mensaje: mensaje })
-      })
-      .then(res => res.json())
-      .then(data => {
-        respuestaDiv.innerText = data.mensaje;
-        textoWhatsapp = data.mensaje;
-        document.getElementById("btnWhatsapp").style.display = "block";
-      })
-      .catch(() => {
-        respuestaDiv.innerText = "Error al cotizar. Intente nuevamente.";
-      });
-    }
+  fetch("https://cotizador-pellet.onrender.com/ia-cotizar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      mensaje: mensaje,
+      contexto: contexto
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    respuestaDiv.innerText = data.mensaje;
+    textoWhatsapp = data.mensaje;
+    contexto = data.nuevo_contexto;
 
-    function enviarWhatsapp() {
-      const numero = "56991422163";
-      const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(textoWhatsapp);
-      window.open(url, "_blank");
-    }
-  </script>
+    document.getElementById("btnWhatsapp").style.display = "block";
+    document.getElementById("mensaje").value = "";
+  })
+  .catch(() => {
+    respuestaDiv.innerText = "Error al responder. Intente nuevamente.";
+  });
+}
+
+function enviarWhatsapp() {
+  const numero = "56991422163";
+  const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(textoWhatsapp);
+  window.open(url, "_blank");
+}
+</script>
 
 </body>
 </html>
