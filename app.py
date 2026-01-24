@@ -1,119 +1,93 @@
-from flask import Flask, request, jsonify
-from dotenv import load_dotenv
+from fastapi import FastAPI
+from pydantic import BaseModel
 import os
-from openai import OpenAI
+import openai
+from dotenv import load_dotenv
 
-# =============================
-# CONFIGURACIÓN
-# =============================
+# Cargar variables de entorno
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-app = Flask(__name__)
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# =============================
-# REGLAS DE NEGOCIO (ECOMAS)
-# =============================
-PRECIO_NORMAL = 4990
-PRECIO_PROMO = 4290
-MIN_PROMO = 60
+app = FastAPI()
 
-DIRECCION = "Lautaro #257, Coyhaique"
-DESPACHO_GRATIS_DESDE = 12
+# ---------- MODELOS ----------
+class Consulta(BaseModel):
+    cantidad: int | None = None
+    mensaje: str | None = None
 
-# =============================
-# FUNCIÓN COTIZAR
-# =============================
-def cotizar(cantidad: int):
-    if cantidad >= MIN_PROMO:
-        precio = PRECIO_PROMO
-        tipo = "Precio PROMOCIÓN aplicado"
-    else:
-        precio = PRECIO_NORMAL
-        tipo = "Precio normal"
 
-    total = cantidad * precio
-
-    if cantidad >= DESPACHO_GRATIS_DESDE:
-        despacho = "Despacho a domicilio GRATIS dentro de Coyhaique"
-    else:
-        despacho = f"Retiro en sucursal Coyhaique ({DIRECCION})"
-
-    mensaje = (
-        f"🔥 Cotización de Pellet – Coyhaique\n\n"
-        f"🪵 Pellet certificado – saco 15 kg\n"
-        f"📦 Cantidad: {cantidad} sacos\n"
-        f"💰 Precio por saco: ${precio:,}\n"
-        f"🧾 Total estimado: ${total:,}\n\n"
-        f"🚚 {despacho}\n"
-        f"ℹ️ {tipo}"
-    )
-
-    return {
-        "cantidad": cantidad,
-        "precio_saco": precio,
-        "tipo_precio": tipo,
-        "despacho": despacho,
-        "total": total,
-        "mensaje": mensaje
-    }
-
-# =============================
-# IA: INTERPRETAR MENSAJE
-# =============================
-def interpretar_con_ia(texto_usuario: str):
+# ---------- FUNCIÓN IA ----------
+def responder_con_ia(texto_usuario: str):
     prompt = f"""
-Eres un asesor de ventas experto de Ecomas en Coyhaique.
-Reglas:
-- Nunca inventes precios
-- Si no hay cantidad, responde informativo
-- Si el usuario pregunta por recomendación, explica
-- Sé claro, cercano y profesional
+Eres un asistente comercial de Ecomas Coyhaique.
+Respondes de forma clara, amable y profesional.
 
-Mensaje del cliente:
-\"\"\"{texto_usuario}\"\"\"
+Información clave:
+- Pellet certificado saco 15 kg
+- Precio normal: $4.990
+- Precio promoción: $4.240 desde 60 sacos
+- Desde 12 sacos: despacho GRATIS dentro de Coyhaique
+- Menos de 12 sacos: retiro en sucursal Lautaro #257
+
+Pregunta del cliente:
+"{texto_usuario}"
 """
 
-    respuesta = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Eres un vendedor experto de pellet."},
-            {"role": "user", "content": prompt}
-        ],
+    respuesta = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
         temperature=0.4
     )
 
     return respuesta.choices[0].message.content
 
-# =============================
-# ENDPOINT PRINCIPAL
-# =============================
-@app.route("/cotizar", methods=["POST"])
-def cotizar_endpoint():
-    data = request.json or {}
 
-    # CASO 1: viene cantidad
-    if "cantidad" in data:
-        try:
-            cantidad = int(data["cantidad"])
-            return jsonify(cotizar(cantidad))
-        except:
-            return jsonify({"error": "Cantidad inválida"}), 400
+# ---------- ENDPOINT ----------
+@app.post("/cotizar")
+def cotizar(data: Consulta):
 
-    # CASO 2: viene mensaje (IA)
-    if "mensaje" in data:
-        texto = data["mensaje"]
-        respuesta_ia = interpretar_con_ia(texto)
+    # 🧠 SI VIENE MENSAJE → IA
+    if data.mensaje:
+        respuesta_ia = responder_con_ia(data.mensaje)
+        return {
+            "tipo": "ia",
+            "respuesta": respuesta_ia
+        }
 
-        return jsonify({
-            "mensaje": respuesta_ia,
-            "nota": "Respuesta generada por IA"
-        })
+    # 🧮 SI VIENE CANTIDAD → REGLAS
+    cantidad = data.cantidad or 0
 
-    return jsonify({"error": "Debes enviar cantidad o mensaje"}), 400
+    if cantidad >= 60:
+        precio = 4240
+        tipo_precio = "Precio PROMOCIÓN aplicado"
+    else:
+        precio = 4990
+        tipo_precio = "Precio normal"
 
-# =============================
-# ARRANQUE
-# =============================
-if __name__ == "__main__":
-    app.run(debug=True)
+    total = cantidad * precio
+
+    if cantidad >= 12:
+        despacho = "Despacho a domicilio GRATIS dentro de Coyhaique"
+    else:
+        despacho = "Retiro en sucursal Coyhaique (Lautaro #257)"
+
+    mensaje = f"""
+🔥 Cotización Pellet Coyhaique
+
+📦 Cantidad: {cantidad} sacos (15 kg c/u)
+💰 Precio por saco: ${precio}
+🧾 Total estimado: ${total}
+
+🚚 {despacho}
+ℹ️ {tipo_precio}
+"""
+
+    return {
+        "cantidad": cantidad,
+        "precio_saco": precio,
+        "total": total,
+        "despacho": despacho,
+        "tipo_precio": tipo_precio,
+        "mensaje": mensaje
+    }
