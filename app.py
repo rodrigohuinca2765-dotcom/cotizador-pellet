@@ -1,68 +1,62 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 import re
-import os
-from openai import OpenAI
 
-# ---------- APP ----------
 app = FastAPI(
     title="Cotizador Pellet Ecomas",
-    description="API de cotización inteligente con IA",
-    version="2.0"
+    description="API de cotización inteligente para Pellet en Coyhaique",
+    version="1.0.0"
 )
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# 🔥 CORS (ESTO ES LO QUE FALTABA)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # en producción se puede limitar
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# ---------- MODELO ----------
 class IARequest(BaseModel):
     mensaje: str
 
-# ---------- UTIL ----------
 def extraer_cantidad(texto: str) -> int:
     match = re.search(r"\d+", texto)
     return int(match.group()) if match else 0
 
-# ---------- HOME ----------
 @app.get("/")
 def home():
     return {"status": "Cotizador de Pellet activo 🔥"}
 
-# ---------- IA COTIZADOR ----------
 @app.post("/ia-cotizar")
 def ia_cotizar(data: IARequest):
-    texto = data.mensaje
-    sacos = extraer_cantidad(texto)
+    cantidad = extraer_cantidad(data.mensaje)
 
-    if sacos >= 60:
-        precio = 4240
-        tipo = "Precio PROMOCIÓN"
+    if cantidad >= 60:
+        precio_saco = 4240
+        tipo_precio = "Precio PROMOCIÓN"
     else:
-        precio = 4990
-        tipo = "Precio normal"
+        precio_saco = 4990
+        tipo_precio = "Precio normal"
 
-    total = sacos * precio
+    total = cantidad * precio_saco
 
-    prompt = f"""
-Eres un asistente comercial de Ecomas.
-Genera una respuesta clara y cordial con estos datos:
-
-- Producto: Pellet certificado, saco 15 kg
-- Cantidad: {sacos}
-- Precio por saco: ${precio}
-- Total: ${total}
-- Retiro: Sucursal Coyhaique, Lautaro #257
-- Tipo de precio: {tipo}
-"""
-
-    respuesta = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
+    mensaje = (
+        f"Hola 👋, quiero cotizar pellet en Coyhaique.\n\n"
+        f"🔥 Pellet certificado – saco 15 kg\n"
+        f"📦 Cantidad solicitada: {cantidad} sacos\n"
+        f"💰 Precio por saco: ${precio_saco:,}\n"
+        f"🧾 Total estimado: ${total:,}\n\n"
+        f"📍 Retiro en sucursal Coyhaique\n"
+        f"📌 Dirección: Lautaro #257\n\n"
+        f"🏷 {tipo_precio}"
     )
 
     return {
-        "cantidad": sacos,
-        "precio_saco": precio,
-        "tipo_precio": tipo,
+        "cantidad": cantidad,
+        "precio_saco": precio_saco,
+        "tipo_precio": tipo_precio,
         "total": total,
-        "mensaje": respuesta.choices[0].message.content
+        "mensaje": mensaje
     }
