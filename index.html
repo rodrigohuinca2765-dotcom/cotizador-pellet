@@ -7,123 +7,139 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
+      background: #f2f2f2;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
 
     .card {
-      background: white;
+      background: #ffffff;
       padding: 25px;
       border-radius: 10px;
       width: 420px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: center;
     }
 
     h2 {
-      text-align: center;
       color: #2e7d32;
+      margin-bottom: 15px;
     }
 
     textarea {
       width: 100%;
-      height: 80px;
+      box-sizing: border-box;
       padding: 10px;
-      margin-top: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
       resize: none;
+      display: block;
+      margin: 0 auto;
     }
 
     button {
       width: 100%;
-      margin-top: 15px;
       padding: 12px;
-      background: #2e7d32;
-      color: white;
+      margin-top: 12px;
+      font-size: 16px;
       border: none;
       border-radius: 5px;
-      font-size: 16px;
       cursor: pointer;
     }
 
-    #resultado {
+    .btn-cotizar {
+      background-color: #2e7d32;
+      color: white;
+    }
+
+    .btn-whatsapp {
+      background-color: #25d366;
+      color: white;
+    }
+
+    .respuesta {
+      background: #f7f7f7;
+      padding: 12px;
       margin-top: 15px;
-      background: #f0f0f0;
-      padding: 10px;
       border-radius: 5px;
+      text-align: left;
       white-space: pre-line;
       font-size: 14px;
     }
 
-    #btnWhatsapp {
-      display: none;
-      background: #25D366;
-      margin-top: 10px;
+    small {
+      color: #666;
+      display: block;
+      margin-bottom: 6px;
+      text-align: left;
     }
   </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h2>🔥 Cotizador Pellet</h2>
+  <div class="card">
+    <h2>🔥 Cotizador Pellet</h2>
 
-  <label>Escribe tu solicitud:</label>
-  <textarea id="mensaje">Necesito 70 sacos de pellet para Coyhaique</textarea>
+    <small>Ejemplo: “Necesito 70 sacos de pellet para Coyhaique”</small>
 
-  <button onclick="cotizar()">Cotizar</button>
+    <textarea
+      id="mensaje"
+      rows="4"
+      placeholder="Ejemplo: Necesito 70 sacos de pellet para Coyhaique">
+    </textarea>
 
-  <div id="resultado">Esperando cotización...</div>
+    <button class="btn-cotizar" onclick="cotizar()">Cotizar</button>
 
-  <button id="btnWhatsapp" onclick="enviarWhatsapp()">
-    📲 Enviar por WhatsApp
-  </button>
-</div>
+    <div id="respuesta" class="respuesta" style="display:none;"></div>
 
-<script>
-let mensajeFinal = "";
+    <button
+      id="btnWhatsapp"
+      class="btn-whatsapp"
+      style="display:none;"
+      onclick="enviarWhatsapp()">
+      📲 Enviar por WhatsApp
+    </button>
+  </div>
 
-async function cotizar() {
-  const texto = document.getElementById("mensaje").value;
-  const salida = document.getElementById("resultado");
-  const btnWp = document.getElementById("btnWhatsapp");
+  <script>
+    let textoWhatsapp = "";
 
-  btnWp.style.display = "none";
-  salida.innerText = "⏳ Cotizando...";
+    function cotizar() {
+      const mensaje = document.getElementById("mensaje").value;
+      const respuestaDiv = document.getElementById("respuesta");
 
-  try {
-    const response = await fetch(
-      "https://cotizador-pellet.onrender.com/ia-cotizar",
-      {
+      respuestaDiv.style.display = "block";
+      respuestaDiv.innerText = "Esperando cotización...";
+
+      fetch("https://cotizador-pellet.onrender.com/ia-cotizar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mensaje: texto })
-      }
-    );
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ mensaje: mensaje })
+      })
+      .then(res => res.json())
+      .then(data => {
+        respuestaDiv.innerText = data.mensaje;
+        textoWhatsapp = data.mensaje;
+        document.getElementById("btnWhatsapp").style.display = "block";
+      })
+      .catch(() => {
+        respuestaDiv.innerText = "Error al cotizar. Intente nuevamente.";
+      });
+    }
 
-    if (!response.ok) throw new Error("Error servidor");
-
-    const data = await response.json();
-    mensajeFinal = data.mensaje;
-
-    salida.innerText = mensajeFinal;
-    btnWp.style.display = "block";
-
-  } catch (error) {
-    salida.innerText = "❌ Error al cotizar. Intenta nuevamente.";
-    console.error(error);
-  }
-}
-
-function enviarWhatsapp() {
-  const url =
-    "https://wa.me/56991422163?text=" +
-    encodeURIComponent(mensajeFinal);
-
-  window.open(url, "_blank");
-}
-</script>
+    function enviarWhatsapp() {
+      const numero = "56991422163";
+      const url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(textoWhatsapp);
+      window.open(url, "_blank");
+    }
+  </script>
 
 </body>
 </html>
